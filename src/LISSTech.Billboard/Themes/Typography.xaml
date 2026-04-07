@@ -1,0 +1,30 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <FontFamily x:Key="InterFont">pack://application:,,,/Assets/Fonts/#Inter</FontFamily>
+
+  <Style x:Key="TypeLabel" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource InterFont}" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <Style x:Key="ToastTitle" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource InterFont}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="FontSize" Value="18" />
+  </Style>
+
+  <Style x:Key="ModalTitle" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource InterFont}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="FontSize" Value="22" />
+  </Style>
+
+  <Style x:Key="BrandText" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource InterFont}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="FontSize" Value="10" />
+  </Style>
+
+</ResourceDictionary>

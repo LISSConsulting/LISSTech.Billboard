@@ -1,0 +1,24 @@
+<Window x:Class="LISSTech.Billboard.Views.ModalWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:LISSTech.Billboard.Controls"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        Topmost="True"
+        WindowState="Normal">
+
+  <Grid>
+    <Border x:Name="Backdrop" Background="#40000000" />
+    <Border x:Name="ModalContainer"
+            Width="1000"
+            VerticalAlignment="Center"
+            HorizontalAlignment="Center"
+            CornerRadius="16"
+            ClipToBounds="True">
+      <controls:NotificationCard x:Name="Card" IsModal="True" />
+    </Border>
+  </Grid>
+
+</Window>

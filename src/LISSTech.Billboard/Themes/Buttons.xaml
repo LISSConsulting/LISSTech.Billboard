@@ -1,0 +1,244 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- PrimaryButton: #1863DC fill, #0D4FA8 border, 2px/6px, 14px/32px padding, Inter Bold 15px -->
+  <!-- Uppercase text is a caller convention — pass uppercase strings as button content -->
+  <Style x:Key="PrimaryButton" TargetType="Button">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Root"
+                  Background="#1863DC"
+                  BorderBrush="#0D4FA8"
+                  BorderThickness="2"
+                  CornerRadius="6"
+                  Padding="32,14">
+            <ContentPresenter HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+              <ContentPresenter.Resources>
+                <Style TargetType="TextBlock">
+                  <Setter Property="FontFamily" Value="{StaticResource InterFont}" />
+                  <Setter Property="FontWeight" Value="Bold" />
+                  <Setter Property="FontSize" Value="15" />
+                  <Setter Property="Foreground" Value="White" />
+                </Style>
+              </ContentPresenter.Resources>
+            </ContentPresenter>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="#2070E0" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="#1255C0" />
+              <Setter TargetName="Root" Property="Opacity" Value="0.9" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- DangerButton.Dark: #E03E3E fill, #B02020 border, white text -->
+  <Style x:Key="DangerButton.Dark" TargetType="Button">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Root"
+                  Background="#E03E3E"
+                  BorderBrush="#B02020"
+                  BorderThickness="2"
+                  CornerRadius="6"
+                  Padding="32,14">
+            <ContentPresenter HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+              <ContentPresenter.Resources>
+                <Style TargetType="TextBlock">
+                  <Setter Property="FontFamily" Value="{StaticResource InterFont}" />
+                  <Setter Property="FontWeight" Value="Bold" />
+                  <Setter Property="FontSize" Value="15" />
+                  <Setter Property="Foreground" Value="White" />
+                </Style>
+              </ContentPresenter.Resources>
+            </ContentPresenter>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="#E85555" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="#C03030" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- DangerButton.Light: #C43030 fill, #A02020 border, white text -->
+  <Style x:Key="DangerButton.Light" TargetType="Button">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Root"
+                  Background="#C43030"
+                  BorderBrush="#A02020"
+                  BorderThickness="2"
+                  CornerRadius="6"
+                  Padding="32,14">
+            <ContentPresenter HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+              <ContentPresenter.Resources>
+                <Style TargetType="TextBlock">
+                  <Setter Property="FontFamily" Value="{StaticResource InterFont}" />
+                  <Setter Property="FontWeight" Value="Bold" />
+                  <Setter Property="FontSize" Value="15" />
+                  <Setter Property="Foreground" Value="White" />
+                </Style>
+              </ContentPresenter.Resources>
+            </ContentPresenter>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="#D04040" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="#A82828" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- GhostButton.Dark: translucent white fill/border, 70% white text -->
+  <Style x:Key="GhostButton.Dark" TargetType="Button">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Root"
+                  Background="#0DFFFFFF"
+                  BorderBrush="#26FFFFFF"
+                  BorderThickness="2"
+                  CornerRadius="6"
+                  Padding="32,14">
+            <ContentPresenter HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+              <ContentPresenter.Resources>
+                <Style TargetType="TextBlock">
+                  <Setter Property="FontFamily" Value="{StaticResource InterFont}" />
+                  <Setter Property="FontWeight" Value="Bold" />
+                  <Setter Property="FontSize" Value="15" />
+                  <Setter Property="Foreground" Value="#B3FFFFFF" />
+                </Style>
+              </ContentPresenter.Resources>
+            </ContentPresenter>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="#14FFFFFF" />
+              <Setter TargetName="Root" Property="BorderBrush" Value="#40FFFFFF" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- GhostButton.Light: translucent black fill/border, #444444 text -->
+  <Style x:Key="GhostButton.Light" TargetType="Button">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Root"
+                  Background="#12000000"
+                  BorderBrush="#33000000"
+                  BorderThickness="2"
+                  CornerRadius="6"
+                  Padding="32,14">
+            <ContentPresenter HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+              <ContentPresenter.Resources>
+                <Style TargetType="TextBlock">
+                  <Setter Property="FontFamily" Value="{StaticResource InterFont}" />
+                  <Setter Property="FontWeight" Value="Bold" />
+                  <Setter Property="FontSize" Value="15" />
+                  <Setter Property="Foreground" Value="#333333" />
+                </Style>
+              </ContentPresenter.Resources>
+            </ContentPresenter>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="#1A000000" />
+              <Setter TargetName="Root" Property="BorderBrush" Value="#44000000" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- CloseButton.Dark: transparent, subtle white hover -->
+  <Style x:Key="CloseButton.Dark" TargetType="Button">
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Root"
+                  Background="Transparent"
+                  CornerRadius="6"
+                  Padding="4">
+            <ContentPresenter HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="#1AFFFFFF" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="#33FFFFFF" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- CloseButton.Light: transparent, subtle black hover -->
+  <Style x:Key="CloseButton.Light" TargetType="Button">
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Root"
+                  Background="Transparent"
+                  CornerRadius="6"
+                  Padding="4">
+            <ContentPresenter HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="#1A000000" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="#33000000" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+</ResourceDictionary>

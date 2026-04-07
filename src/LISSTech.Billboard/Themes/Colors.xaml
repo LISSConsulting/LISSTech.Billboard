@@ -1,0 +1,127 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- General text — dark theme -->
+  <SolidColorBrush x:Key="Text.Primary.Dark"        Color="White" />
+  <SolidColorBrush x:Key="Text.Body.Dark"           Color="#B8FFFFFF" />
+  <SolidColorBrush x:Key="Text.BrandWatermark.Dark" Color="#33FFFFFF" />
+
+  <!-- General text — light theme -->
+  <SolidColorBrush x:Key="Text.Primary.Light"        Color="#111111" />
+  <SolidColorBrush x:Key="Text.Body.Light"           Color="#444444" />
+  <SolidColorBrush x:Key="Text.BrandWatermark.Light" Color="#40000000" />
+
+  <!-- Default card background (used when no type tint) -->
+  <SolidColorBrush x:Key="Card.Background.Dark"     Color="#EB1C1C26" />
+  <SolidColorBrush x:Key="Card.Background.Light"    Color="#E0FFFFFF" />
+
+  <!--
+    ══════════════════════════════════════════════════════════════
+    Info — Brand Blue #2E71B8
+    ══════════════════════════════════════════════════════════════
+  -->
+  <SolidColorBrush x:Key="Info.Badge"            Color="#2E71B8" />
+  <SolidColorBrush x:Key="Info.BadgeText"        Color="White" />
+  <SolidColorBrush x:Key="Info.Label.Dark"       Color="#6BA3DC" />
+  <SolidColorBrush x:Key="Info.Label.Light"      Color="#1F5A96" />
+  <SolidColorBrush x:Key="Info.HeaderBg.Dark"    Color="#2E2E71B8" />
+  <SolidColorBrush x:Key="Info.HeaderBg.Light"   Color="#0F2E71B8" />
+  <SolidColorBrush x:Key="Info.Border.Dark"      Color="#662E71B8" />
+  <SolidColorBrush x:Key="Info.Border.Light"     Color="#332E71B8" />
+  <SolidColorBrush x:Key="Info.CardBg.Dark"      Color="#F01C2030" />
+  <SolidColorBrush x:Key="Info.CardBg.Light"     Color="#F0F0F4FB" />
+  <!-- Accent for primary buttons -->
+  <SolidColorBrush x:Key="Info.Accent"           Color="#2E71B8" />
+  <SolidColorBrush x:Key="Info.AccentHover"      Color="#3A80C8" />
+  <SolidColorBrush x:Key="Info.AccentPressed"    Color="#1F5A96" />
+  <SolidColorBrush x:Key="Info.AccentBorder"     Color="#1F5A96" />
+
+  <!--
+    ══════════════════════════════════════════════════════════════
+    Warn — Amber #C49A2A
+    ══════════════════════════════════════════════════════════════
+  -->
+  <SolidColorBrush x:Key="Warn.Badge.Dark"        Color="#D4AA3A" />
+  <SolidColorBrush x:Key="Warn.BadgeText.Dark"    Color="#0A0A0F" />
+  <SolidColorBrush x:Key="Warn.Badge.Light"       Color="#A37B1A" />
+  <SolidColorBrush x:Key="Warn.BadgeText.Light"   Color="White" />
+  <SolidColorBrush x:Key="Warn.Label.Dark"        Color="#D4AA3A" />
+  <SolidColorBrush x:Key="Warn.Label.Light"       Color="#7A5C14" />
+  <SolidColorBrush x:Key="Warn.HeaderBg.Dark"     Color="#1FC49A2A" />
+  <SolidColorBrush x:Key="Warn.HeaderBg.Light"    Color="#0FC49A2A" />
+  <SolidColorBrush x:Key="Warn.Border.Dark"       Color="#59C49A2A" />
+  <SolidColorBrush x:Key="Warn.Border.Light"      Color="#33A37B1A" />
+  <SolidColorBrush x:Key="Warn.CardBg.Dark"       Color="#F026241C" />
+  <SolidColorBrush x:Key="Warn.CardBg.Light"      Color="#F0FBF7F0" />
+  <SolidColorBrush x:Key="Warn.Accent"            Color="#C49A2A" />
+  <SolidColorBrush x:Key="Warn.AccentHover"       Color="#D4AA3A" />
+  <SolidColorBrush x:Key="Warn.AccentPressed"     Color="#A37B1A" />
+  <SolidColorBrush x:Key="Warn.AccentBorder"      Color="#A37B1A" />
+
+  <!--
+    ══════════════════════════════════════════════════════════════
+    Alert — Orange #D4782E
+    ══════════════════════════════════════════════════════════════
+  -->
+  <SolidColorBrush x:Key="Alert.Badge.Dark"       Color="#D4782E" />
+  <SolidColorBrush x:Key="Alert.BadgeText.Dark"   Color="#0A0A0F" />
+  <SolidColorBrush x:Key="Alert.Badge.Light"      Color="#B5621E" />
+  <SolidColorBrush x:Key="Alert.BadgeText.Light"  Color="White" />
+  <SolidColorBrush x:Key="Alert.Label.Dark"       Color="#D4782E" />
+  <SolidColorBrush x:Key="Alert.Label.Light"      Color="#944F18" />
+  <SolidColorBrush x:Key="Alert.HeaderBg.Dark"    Color="#26D4782E" />
+  <SolidColorBrush x:Key="Alert.HeaderBg.Light"   Color="#0FD4782E" />
+  <SolidColorBrush x:Key="Alert.Border.Dark"      Color="#66D4782E" />
+  <SolidColorBrush x:Key="Alert.Border.Light"     Color="#33B5621E" />
+  <SolidColorBrush x:Key="Alert.CardBg.Dark"      Color="#F0261F1C" />
+  <SolidColorBrush x:Key="Alert.CardBg.Light"     Color="#F0FBF4F0" />
+  <SolidColorBrush x:Key="Alert.Accent"           Color="#D4782E" />
+  <SolidColorBrush x:Key="Alert.AccentHover"      Color="#E0883E" />
+  <SolidColorBrush x:Key="Alert.AccentPressed"    Color="#B5621E" />
+  <SolidColorBrush x:Key="Alert.AccentBorder"     Color="#B5621E" />
+
+  <!--
+    ══════════════════════════════════════════════════════════════
+    Critical — Brand Red #DA5657
+    ══════════════════════════════════════════════════════════════
+  -->
+  <SolidColorBrush x:Key="Critical.Badge.Dark"      Color="#DA5657" />
+  <SolidColorBrush x:Key="Critical.BadgeText.Dark"  Color="White" />
+  <SolidColorBrush x:Key="Critical.Badge.Light"     Color="#B83A3B" />
+  <SolidColorBrush x:Key="Critical.BadgeText.Light" Color="White" />
+  <SolidColorBrush x:Key="Critical.Label.Dark"      Color="#E87A7B" />
+  <SolidColorBrush x:Key="Critical.Label.Light"     Color="#962F30" />
+  <SolidColorBrush x:Key="Critical.HeaderBg.Dark"   Color="#33DA5657" />
+  <SolidColorBrush x:Key="Critical.HeaderBg.Light"  Color="#12DA5657" />
+  <SolidColorBrush x:Key="Critical.Border.Dark"     Color="#73DA5657" />
+  <SolidColorBrush x:Key="Critical.Border.Light"    Color="#33B83A3B" />
+  <SolidColorBrush x:Key="Critical.CardBg.Dark"     Color="#F0261C1E" />
+  <SolidColorBrush x:Key="Critical.CardBg.Light"    Color="#F0FBF0F1" />
+  <SolidColorBrush x:Key="Critical.Accent"          Color="#DA5657" />
+  <SolidColorBrush x:Key="Critical.AccentHover"     Color="#E06A6B" />
+  <SolidColorBrush x:Key="Critical.AccentPressed"   Color="#B83A3B" />
+  <SolidColorBrush x:Key="Critical.AccentBorder"    Color="#B83A3B" />
+
+  <!--
+    ══════════════════════════════════════════════════════════════
+    Question — Brand Blue variant #2E71B8
+    ══════════════════════════════════════════════════════════════
+  -->
+  <SolidColorBrush x:Key="Question.Badge.Dark"      Color="#1F5A96" />
+  <SolidColorBrush x:Key="Question.BadgeText.Dark"  Color="White" />
+  <SolidColorBrush x:Key="Question.Badge.Light"     Color="#2E71B8" />
+  <SolidColorBrush x:Key="Question.BadgeText.Light" Color="White" />
+  <SolidColorBrush x:Key="Question.Label.Dark"      Color="#6BA3DC" />
+  <SolidColorBrush x:Key="Question.Label.Light"     Color="#1F5A96" />
+  <SolidColorBrush x:Key="Question.HeaderBg.Dark"   Color="#1E2E71B8" />
+  <SolidColorBrush x:Key="Question.HeaderBg.Light"  Color="#0F2E71B8" />
+  <SolidColorBrush x:Key="Question.Border.Dark"     Color="#592E71B8" />
+  <SolidColorBrush x:Key="Question.Border.Light"    Color="#332E71B8" />
+  <SolidColorBrush x:Key="Question.CardBg.Dark"     Color="#F01C2030" />
+  <SolidColorBrush x:Key="Question.CardBg.Light"    Color="#F0F0F4FB" />
+  <SolidColorBrush x:Key="Question.Accent"          Color="#2E71B8" />
+  <SolidColorBrush x:Key="Question.AccentHover"     Color="#3A80C8" />
+  <SolidColorBrush x:Key="Question.AccentPressed"   Color="#1F5A96" />
+  <SolidColorBrush x:Key="Question.AccentBorder"    Color="#1F5A96" />
+
+</ResourceDictionary>

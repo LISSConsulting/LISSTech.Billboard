@@ -1,0 +1,10 @@
+.vs/
+**/src/**/bin/
+**/tests/**/bin/
+obj/
+Release/
+.env
+.claude/
+.superpowers/
+*.pdb
+node_modules/
