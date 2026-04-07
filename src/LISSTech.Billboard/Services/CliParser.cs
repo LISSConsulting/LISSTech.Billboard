@@ -19,6 +19,25 @@ public static class CliParser
         return result;
     }
 
+    private static TimeSpan ParseDefer(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException("Defer duration cannot be empty.");
+
+        var span = value.Trim().ToLowerInvariant();
+        if (span.EndsWith("m") && int.TryParse(span.Substring(0, span.Length - 1), out var minutes))
+            return minutes > 0 ? TimeSpan.FromMinutes(minutes)
+                : throw new ArgumentException($"Invalid defer duration '{value}'. Duration must be positive.");
+        if (span.EndsWith("h") && int.TryParse(span.Substring(0, span.Length - 1), out var hours))
+            return hours > 0 ? TimeSpan.FromHours(hours)
+                : throw new ArgumentException($"Invalid defer duration '{value}'. Duration must be positive.");
+        if (span.EndsWith("d") && int.TryParse(span.Substring(0, span.Length - 1), out var days))
+            return days > 0 ? TimeSpan.FromDays(days)
+                : throw new ArgumentException($"Invalid defer duration '{value}'. Duration must be positive.");
+
+        throw new ArgumentException($"Invalid defer duration '{value}'. Use format: 30m, 1h, 4h, 1d, 7d.");
+    }
+
     public static bool IsHelpRequested(string[] args)
     {
         if (args.Length == 0) return true;
@@ -49,7 +68,7 @@ public static class CliParser
               --modal              Show as centered modal instead of bottom-right toast
               --theme <theme>      auto (default), light, dark
               --pipe <name>        Named pipe for IPC result (JSON)
-              --buttons <spec>     Semicolon-separated Label:value:style (style: primary, danger, ghost)
+              --buttons <spec>     Semicolon-separated: Label:value[:style][:defer=duration]
               --illustration <name> Illustration name (default: auto per type; "none" to disable)
               --msp-name <text>    MSP/organization name woven into context footer
               --msp-logo <path>   Logo image file path or URL (PNG, JPG, ICO)
@@ -60,7 +79,7 @@ public static class CliParser
               Billboard.exe --type info --title "Update" --message "New version available"
               Billboard.exe --type critical --title "Alert" --message "Account locked" --modal
               Billboard.exe --type question --title "Restart?" --message "Save work" \
-                --buttons "Restart Now:restart:primary;Later:defer:ghost" --modal --pipe Billboard.abc123
+                --buttons "Restart Now:restart:primary;Later:snooze:ghost:defer=4h" --modal --pipe Billboard.abc123
 
             EXIT CODES:
               0    Button clicked
@@ -167,7 +186,14 @@ public static class CliParser
                     var style = ButtonStyle.Ghost;
                     if (btn.TryGetProperty("Style", out var sp) || btn.TryGetProperty("style", out sp))
                         style = ParseEnum<ButtonStyle>(sp.GetString()!, "button style");
-                    buttons.Add(new ButtonDefinition { Label = label, Value = value, Style = style });
+                    TimeSpan? defer = null;
+                    if (btn.TryGetProperty("Defer", out var dp) || btn.TryGetProperty("defer", out dp))
+                    {
+                        var deferStr = dp.GetString();
+                        if (!string.IsNullOrWhiteSpace(deferStr))
+                            defer = ParseDefer(deferStr!);
+                    }
+                    buttons.Add(new ButtonDefinition { Label = label, Value = value, Style = style, Defer = defer });
                 }
             }
         }
@@ -216,20 +242,30 @@ public static class CliParser
             {
                 var segments = part.Split(':');
                 var label = segments[0].Trim();
-                // If the last segment is a valid style name, use it as style and join
-                // the middle segments as the value (supports URLs with colons in values).
+
+                var lastSegment = segments[segments.Length - 1].Trim();
+                TimeSpan? defer = null;
+                int styleIndex = segments.Length - 1;
+
+                if (lastSegment.StartsWith("defer=", StringComparison.OrdinalIgnoreCase))
+                {
+                    defer = ParseDefer(lastSegment.Substring(6));
+                    styleIndex = segments.Length - 2;
+                }
+
                 ButtonStyle parsedStyle = ButtonStyle.Ghost;
-                bool hasStyle = segments.Length > 2 &&
-                    Enum.TryParse<ButtonStyle>(segments[segments.Length - 1], ignoreCase: true, out parsedStyle);
-                var value = (hasStyle
-                    ? string.Join(":", segments, 1, segments.Length - 2)
-                    : segments.Length > 1 ? string.Join(":", segments, 1, segments.Length - 1) : "").Trim();
+                bool hasStyle = styleIndex > 1 &&
+                    Enum.TryParse<ButtonStyle>(segments[styleIndex].Trim(), ignoreCase: true, out parsedStyle);
+
+                int valueEnd = hasStyle ? styleIndex : (defer != null ? styleIndex + 1 : segments.Length);
+                var value = string.Join(":", segments, 1, valueEnd - 1).Trim();
                 var style = hasStyle ? parsedStyle : ButtonStyle.Ghost;
+
                 if (string.IsNullOrWhiteSpace(label))
                     throw new ArgumentException("Each button must have a non-empty label.");
                 if (string.IsNullOrWhiteSpace(value))
                     throw new ArgumentException("Each button must have a non-empty value.");
-                buttons.Add(new ButtonDefinition { Label = label, Value = value, Style = style });
+                buttons.Add(new ButtonDefinition { Label = label, Value = value, Style = style, Defer = defer });
             }
         }
 
@@ -244,7 +280,11 @@ public static class CliParser
         if (type == NotificationType.Question && buttons.Count == 0)
             buttons.Add(new ButtonDefinition { Label = "OK", Value = "ok", Style = ButtonStyle.Primary });
 
-        return new BillboardConfig
+        BrandingConfig? branding = null;
+        if (mspName != null || mspLogo != null)
+            branding = new BrandingConfig { Name = mspName, Logo = mspLogo };
+
+        var config = new BillboardConfig
         {
             Type = type.Value,
             Title = title,
@@ -252,11 +292,11 @@ public static class CliParser
             Timeout = timeout,
             Modal = modal,
             Theme = theme,
-            PipeName = pipeName,
             Buttons = buttons,
             Illustration = illustration?.Equals("none", StringComparison.OrdinalIgnoreCase) == true ? null : illustration,
-            MspName = mspName,
-            MspLogo = mspLogo,
+            Branding = branding,
         };
+        config.PipeName = pipeName;
+        return config;
     }
 }

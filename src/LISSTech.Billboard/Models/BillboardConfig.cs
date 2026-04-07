@@ -26,11 +26,12 @@ public sealed class BillboardConfig
     public int? Timeout { get; init; }
     public bool Modal { get; init; }
     public ThemeMode Theme { get; init; } = ThemeMode.Auto;
-    public string? PipeName { get; init; }
     public List<ButtonDefinition> Buttons { get; init; } = new();
     public string? Illustration { get; init; }
-    public string? MspName { get; init; }
-    public string? MspLogo { get; init; }
+    public BrandingConfig? Branding { get; init; }
+
+    // Used by exe host for pipe IPC — not part of public API
+    internal string? PipeName { get; set; }
 
     public int EffectiveTimeout => Timeout ?? Type switch
     {

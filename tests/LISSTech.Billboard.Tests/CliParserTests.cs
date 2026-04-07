@@ -205,8 +205,8 @@ public class CliParserTests
         Assert.True(config.Modal);
         Assert.Equal(ThemeMode.Dark, config.Theme);
         Assert.Equal("my-pipe", config.PipeName);
-        Assert.Equal("Acme IT", config.MspName);
-        Assert.Equal("C:\\logo.png", config.MspLogo);
+        Assert.Equal("Acme IT", config.Branding?.Name);
+        Assert.Equal("C:\\logo.png", config.Branding?.Logo);
     }
 
     [Fact]
@@ -262,8 +262,8 @@ public class CliParserTests
             "--msp-logo", @"C:\logo.png"
         });
 
-        Assert.Equal("Acme IT", config.MspName);
-        Assert.Equal(@"C:\logo.png", config.MspLogo);
+        Assert.Equal("Acme IT", config.Branding?.Name);
+        Assert.Equal(@"C:\logo.png", config.Branding?.Logo);
     }
 
     [Fact]

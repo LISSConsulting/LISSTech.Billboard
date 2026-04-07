@@ -20,6 +20,9 @@ public sealed class BillboardResult
     [JsonPropertyName("timeout")]
     public bool Timeout { get; set; }
 
+    [JsonPropertyName("defer")]
+    public TimeSpan? Defer { get; set; }
+
     [JsonPropertyName("timestamp")]
     public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
 
@@ -29,7 +32,8 @@ public sealed class BillboardResult
         Value = button.Value,
         Index = index,
         Dismissed = false,
-        Timeout = false
+        Timeout = false,
+        Defer = button.Defer
     };
 
     public static BillboardResult FromDismiss() => new()

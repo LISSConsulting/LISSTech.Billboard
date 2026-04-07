@@ -102,10 +102,10 @@ public partial class NotificationCard : UserControl
         ApplyIllustration(config, theme);
 
         // MSP logo
-        ApplyMspLogo(config.MspLogo);
+        ApplyMspLogo(config.Branding?.Logo);
 
         // Context footer
-        ContextFooter.Text = GetDefaultBrand(config.Type, config.MspName);
+        ContextFooter.Text = GetDefaultBrand(config.Type, config.Branding?.Name);
         ContextFooter.Foreground = FindBrush($"Text.Body.{theme}");
         ContextFooter.Visibility = Visibility.Visible;
 
@@ -224,7 +224,7 @@ public partial class NotificationCard : UserControl
                 // Brand footer goes under illustration, not in content area
                 BrandFooter.Visibility = Visibility.Collapsed;
                 PanelBrandText.Foreground = FindBrush($"Text.BrandWatermark.{theme}");
-                PanelBrandText.Text = config.MspName?.ToUpperInvariant() ?? "LISS TECHNOLOGIES";
+                PanelBrandText.Text = config.Branding?.Name?.ToUpperInvariant() ?? "LISS TECHNOLOGIES";
             }
             else
             {
