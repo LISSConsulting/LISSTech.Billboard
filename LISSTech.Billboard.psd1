@@ -5,9 +5,17 @@
     Author            = 'Marcin Wisniowski <mwisniowski@lisstech.com>'
     CompanyName       = 'LISS Consulting, Corp.'
     Copyright         = '(c) LISS Consulting. All rights reserved.'
-    Description       = 'PowerShell wrapper for the LISSTech Billboard notification system.'
+    Description       = 'LISSTech Billboard notification system for Windows endpoints.'
     PowerShellVersion = '5.1'
-    FunctionsToExport = @('Show-Billboard', 'Request-Billboard')
+    RequiredAssemblies = @('Assembly\LISSTech.Billboard.dll')
+    FunctionsToExport = @(
+        'New-BillboardButton',
+        'New-BillboardBranding',
+        'New-BillboardNotification',
+        'Show-Billboard',
+        'Request-Billboard',
+        'Register-BillboardDeferral'
+    )
     CmdletsToExport   = @()
     VariablesToExport  = @()
     AliasesToExport    = @()
