@@ -451,4 +451,25 @@ public class CliParserTests
         Assert.Contains("badstyle", ex.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("ghost", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void Parse_MspNameAndLogo_CreatesBrandingConfig()
+    {
+        var args = new[] { "--type", "info", "--title", "T", "--message", "M",
+            "--msp-name", "LISS Consulting", "--msp-logo", "C:\\logo.png" };
+        var config = CliParser.Parse(args);
+
+        Assert.NotNull(config.Branding);
+        Assert.Equal("LISS Consulting", config.Branding!.Name);
+        Assert.Equal("C:\\logo.png", config.Branding.Logo);
+    }
+
+    [Fact]
+    public void Parse_NoMspFlags_BrandingIsNull()
+    {
+        var args = new[] { "--type", "info", "--title", "T", "--message", "M" };
+        var config = CliParser.Parse(args);
+
+        Assert.Null(config.Branding);
+    }
 }
