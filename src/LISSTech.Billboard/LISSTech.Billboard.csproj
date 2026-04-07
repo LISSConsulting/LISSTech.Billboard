@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>net472</TargetFramework>
     <UseWPF>true</UseWPF>
-    <AssemblyName>Billboard</AssemblyName>
+    <AssemblyName>LISSTech.Billboard</AssemblyName>
     <RootNamespace>LISSTech.Billboard</RootNamespace>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
