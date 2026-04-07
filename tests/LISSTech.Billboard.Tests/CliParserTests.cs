@@ -5,7 +5,7 @@ using LISSTech.Billboard.Models;
 using LISSTech.Billboard.Services;
 using Xunit;
 
-namespace Billboard.Tests;
+namespace LISSTech.Billboard.Tests;
 
 public class CliParserTests
 {

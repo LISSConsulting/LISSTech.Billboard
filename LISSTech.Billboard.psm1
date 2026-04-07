@@ -106,7 +106,8 @@ function New-BillboardNotification {
     }
 
     if ($PSBoundParameters.ContainsKey('Illustration') -and $Illustration) {
-        $illusValue = if ($Illustration -eq 'none') { $null } else { $Illustration }
+        $illusValue = $null
+        if ($Illustration -ne 'none') { $illusValue = $Illustration }
         $config.GetType().GetProperty('Illustration').SetValue($config, $illusValue)
     }
 
@@ -161,7 +162,7 @@ function Request-Billboard {
 
     if ($AsUser -and (Test-IsSystem)) {
         $pipeName = New-BillboardPipeName
-        $Notification.GetType().GetProperty('PipeName').SetValue($Notification, $pipeName)
+        $Notification.GetType().GetProperty('PipeName', [System.Reflection.BindingFlags]'NonPublic,Instance').SetValue($Notification, $pipeName)
 
         $cliArgs = ConvertTo-CliArgs $Notification
         $exe, $cliArgs = Resolve-AsUserCommand $cliArgs
@@ -232,31 +233,32 @@ function ConvertTo-CliArgs {
     [OutputType([string[]])]
     param([Parameter(Mandatory)][LISSTech.Billboard.Models.BillboardConfig]$Config)
 
-    $args = [System.Collections.Generic.List[string]]::new()
-    $args.Add('--type');    $args.Add($Config.Type.ToString().ToLower())
-    $args.Add('--title');   $args.Add($Config.Title)
-    $args.Add('--message'); $args.Add($Config.Message)
+    $cliArgs = [System.Collections.Generic.List[string]]::new()
+    $cliArgs.Add('--type');    $cliArgs.Add($Config.Type.ToString().ToLower())
+    $cliArgs.Add('--title');   $cliArgs.Add($Config.Title)
+    $cliArgs.Add('--message'); $cliArgs.Add($Config.Message)
 
     if ($Config.Timeout) {
-        $args.Add('--timeout'); $args.Add($Config.Timeout.ToString())
+        $cliArgs.Add('--timeout'); $cliArgs.Add($Config.Timeout.ToString())
     }
-    if ($Config.Modal) { $args.Add('--modal') }
+    if ($Config.Modal) { $cliArgs.Add('--modal') }
     if ($Config.Theme -ne [LISSTech.Billboard.Models.ThemeMode]::Auto) {
-        $args.Add('--theme'); $args.Add($Config.Theme.ToString().ToLower())
+        $cliArgs.Add('--theme'); $cliArgs.Add($Config.Theme.ToString().ToLower())
     }
     if ($Config.Branding) {
         if ($Config.Branding.Name) {
-            $args.Add('--msp-name'); $args.Add($Config.Branding.Name)
+            $cliArgs.Add('--msp-name'); $cliArgs.Add($Config.Branding.Name)
         }
         if ($Config.Branding.Logo) {
-            $args.Add('--msp-logo'); $args.Add($Config.Branding.Logo)
+            $cliArgs.Add('--msp-logo'); $cliArgs.Add($Config.Branding.Logo)
         }
     }
     if ($Config.Illustration) {
-        $args.Add('--illustration'); $args.Add($Config.Illustration)
+        $cliArgs.Add('--illustration'); $cliArgs.Add($Config.Illustration)
     }
-    if ($Config.PipeName) {
-        $args.Add('--pipe'); $args.Add($Config.PipeName)
+    $pipeName = $Config.GetType().GetProperty('PipeName', [System.Reflection.BindingFlags]'NonPublic,Instance').GetValue($Config)
+    if ($pipeName) {
+        $cliArgs.Add('--pipe'); $cliArgs.Add($pipeName)
     }
     if ($Config.Buttons.Count -gt 0) {
         $parts = foreach ($btn in $Config.Buttons) {
@@ -269,10 +271,10 @@ function ConvertTo-CliArgs {
             }
             $spec
         }
-        $args.Add('--buttons'); $args.Add($parts -join ';')
+        $cliArgs.Add('--buttons'); $cliArgs.Add($parts -join ';')
     }
 
-    return $args.ToArray()
+    return $cliArgs.ToArray()
 }
 
 function Test-IsSystem {
