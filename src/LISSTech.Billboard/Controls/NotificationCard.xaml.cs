@@ -199,7 +199,7 @@ public partial class NotificationCard : UserControl
             // Try theme-specific illustration first (e.g., info-light.png), fall back to default
             var themeSuffix = theme == "Light" ? "-light" : "";
             BitmapImage bitmap;
-            var themedUri = new Uri($"pack://application:,,,/Assets/Illustrations/{name}{themeSuffix}.png", UriKind.Absolute);
+            var themedUri = new Uri($"pack://application:,,,/LISSTech.Billboard;component/Assets/Illustrations/{name}{themeSuffix}.png", UriKind.Absolute);
             var streamInfo = Application.GetResourceStream(themedUri);
             if (streamInfo != null)
             {
@@ -208,7 +208,7 @@ public partial class NotificationCard : UserControl
             }
             else
             {
-                bitmap = new BitmapImage(new Uri($"pack://application:,,,/Assets/Illustrations/{name}.png", UriKind.Absolute));
+                bitmap = new BitmapImage(new Uri($"pack://application:,,,/LISSTech.Billboard;component/Assets/Illustrations/{name}.png", UriKind.Absolute));
             }
 
             if (IsModal)
@@ -246,7 +246,7 @@ public partial class NotificationCard : UserControl
 
     private void ApplyMspLogo(string? logoPath)
     {
-        var fallback = new BitmapImage(new Uri("pack://application:,,,/Assets/Brand/liss-logo.png", UriKind.Absolute));
+        var fallback = new BitmapImage(new Uri("pack://application:,,,/LISSTech.Billboard;component/Assets/Brand/liss-logo.png", UriKind.Absolute));
 
         if (string.IsNullOrWhiteSpace(logoPath))
         {

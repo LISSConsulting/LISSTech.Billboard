@@ -43,9 +43,8 @@ publish:
     & dotnet publish 'src/LISSTech.Billboard.Host/LISSTech.Billboard.Host.csproj' -c Release -o $binDir -nologo -v:q
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-    # Clean up: exe's copy of the DLL and deps belong in Assembly/, not Bin/
-    # Keep only Billboard.exe and Billboard.exe.config in Bin/
-    Get-ChildItem $binDir -Exclude 'Billboard.exe', 'Billboard.exe.config' | Remove-Item -Force
+    # Remove build artifacts that aren't needed at runtime
+    Get-ChildItem $binDir -Filter '*.pdb' | Remove-Item -Force
 
     # Copy ServiceUI.exe to Bin/
     $serviceUI = '{{ justfile_directory() }}/vendor/ServiceUI.exe'
