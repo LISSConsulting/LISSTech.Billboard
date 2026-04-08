@@ -73,56 +73,11 @@ function Capture-Notification {
     $ps.Dispose()
 }
 
-$themeKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
-$desktopKey = 'HKCU:\Control Panel\Desktop'
-$colorsKey = 'HKCU:\Control Panel\Colors'
-
-Add-Type @"
-using System.Runtime.InteropServices;
-public class Wallpaper {
-    [DllImport("user32.dll", CharSet = CharSet.Auto)]
-    public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
-    public const int SPI_SETDESKWALLPAPER = 0x0014;
-    public const int SPIF_UPDATEINIFILE = 0x01;
-    public const int SPIF_SENDCHANGE = 0x02;
-}
-"@
-
-function Set-WindowsTheme([bool]$Dark) {
-    $val = if ($Dark) { 0 } else { 1 }
-    Set-ItemProperty $themeKey -Name 'AppsUseLightTheme' -Value $val
-    Set-ItemProperty $themeKey -Name 'SystemUsesLightTheme' -Value $val
-
-    # Set solid desktop color (no wallpaper image)
-    [Wallpaper]::SystemParametersInfo([Wallpaper]::SPI_SETDESKWALLPAPER, 0, '', [Wallpaper]::SPIF_UPDATEINIFILE -bor [Wallpaper]::SPIF_SENDCHANGE) | Out-Null
-
-    if ($Dark) {
-        # Dark charcoal background
-        Set-ItemProperty $colorsKey -Name 'Background' -Value '26 26 36'
-    } else {
-        # Light warm gray background
-        Set-ItemProperty $colorsKey -Name 'Background' -Value '235 235 230'
-    }
-
-    # Force desktop refresh
-    [Wallpaper]::SystemParametersInfo([Wallpaper]::SPI_SETDESKWALLPAPER, 0, '', [Wallpaper]::SPIF_UPDATEINIFILE -bor [Wallpaper]::SPIF_SENDCHANGE) | Out-Null
-    Start-Sleep -Milliseconds 2000
-}
-
-# Save current state to restore later
-$origApps = (Get-ItemProperty $themeKey).AppsUseLightTheme
-$origSystem = (Get-ItemProperty $themeKey).SystemUsesLightTheme
-$origWallpaper = (Get-ItemProperty $desktopKey).Wallpaper
-$origBgColor = (Get-ItemProperty $colorsKey).Background
-
 Write-Host "`nCapturing Billboard screenshots" -ForegroundColor Cyan
 Write-Host "   Output: $OutputDir" -ForegroundColor DarkGray
 Write-Host ""
 
 # -- Dark theme screenshots --
-
-Write-Host "   Switching to dark theme..." -ForegroundColor DarkGray
-Set-WindowsTheme -Dark $true
 
 Write-Host "   Toasts (dark):" -ForegroundColor DarkGray
 
@@ -181,8 +136,10 @@ Capture-Notification -FileName 'modal-question-dark' -Notification (
 # -- Switch to light theme --
 
 Write-Host ""
-Write-Host "   Switching to light theme..." -ForegroundColor DarkGray
-Set-WindowsTheme -Dark $false
+Write-Host "   >> Switch Windows to LIGHT theme (Settings > Personalization > Colors)" -ForegroundColor Yellow
+Write-Host "   >> Set a light/white desktop wallpaper" -ForegroundColor Yellow
+Write-Host "   >> Press Enter when ready..." -ForegroundColor Yellow
+$null = Read-Host
 
 Write-Host "   Toasts (light):" -ForegroundColor DarkGray
 
@@ -227,15 +184,7 @@ Capture-Notification -FileName 'modal-question-light' -Notification (
         )
 )
 
-# Cleanup -- restore original theme and wallpaper
-Set-ItemProperty $themeKey -Name 'AppsUseLightTheme' -Value $origApps
-Set-ItemProperty $themeKey -Name 'SystemUsesLightTheme' -Value $origSystem
-Set-ItemProperty $colorsKey -Name 'Background' -Value $origBgColor
-if ($origWallpaper) {
-    [Wallpaper]::SystemParametersInfo([Wallpaper]::SPI_SETDESKWALLPAPER, 0, $origWallpaper, [Wallpaper]::SPIF_UPDATEINIFILE -bor [Wallpaper]::SPIF_SENDCHANGE) | Out-Null
-} else {
-    [Wallpaper]::SystemParametersInfo([Wallpaper]::SPI_SETDESKWALLPAPER, 0, '', [Wallpaper]::SPIF_UPDATEINIFILE -bor [Wallpaper]::SPIF_SENDCHANGE) | Out-Null
-}
+# Cleanup
 $rs.Close()
 $shell.UndoMinimizeAll()
 
