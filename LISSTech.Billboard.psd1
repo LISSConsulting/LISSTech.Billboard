@@ -1,12 +1,19 @@
 @{
     RootModule        = 'LISSTech.Billboard.psm1'
-    ModuleVersion     = '26.98.0'
+    ModuleVersion     = '26.98.1'
     GUID              = 'f3a7c2e1-8b4d-4f6a-9c5e-1d2b3a4f5e6c'
     Author            = 'Marcin Wisniowski <mwisniowski@lisstech.com>'
     CompanyName       = 'LISS Consulting, Corp.'
     Copyright         = '(c) LISS Consulting. All rights reserved.'
     Description       = 'LISSTech Billboard notification system for Windows endpoints.'
     PowerShellVersion = '5.1'
+    PrivateData       = @{
+        PSData = @{
+            ProjectUri   = 'https://github.com/LISSConsulting/LISSTech.Billboard'
+            LicenseUri   = 'https://github.com/LISSConsulting/LISSTech.Billboard/blob/trunk/LICENSE'
+            Tags         = @('Windows', 'WPF', 'Notification', 'Toast', 'Modal', 'Endpoint', 'RMM', 'MSP')
+        }
+    }
     RequiredAssemblies = @('Assembly\LISSTech.Billboard.dll')
     FunctionsToExport = @(
         'New-BillboardButton',
