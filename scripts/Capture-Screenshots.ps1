@@ -4,12 +4,12 @@
     Captures screenshots of all Billboard notification variants for docs/marketing.
 .DESCRIPTION
     Run on a clean VM with 1920x1080 resolution for best results.
-    The module must be installed or the exe must be available.
+    The module must be imported or available in PSModulePath.
 .EXAMPLE
-    powershell -File Capture-Screenshots.ps1 -ExePath .\Bin\Billboard.exe
+    Import-Module LISSTech.Billboard
+    powershell -STA -File Capture-Screenshots.ps1
 #>
 param(
-    [string]$ExePath,
     [string]$OutputDir = (Join-Path $PSScriptRoot 'screenshots')
 )
 
@@ -17,34 +17,40 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-# Find the exe
-if (-not $ExePath) {
-    # Try module path
-    $mod = Get-Module LISSTech.Billboard -ListAvailable | Select-Object -First 1
-    if ($mod) {
-        $ExePath = Join-Path (Split-Path $mod.Path) 'Bin\Billboard.exe'
-    }
-}
-if (-not $ExePath -or -not (Test-Path $ExePath)) {
-    Write-Error "Billboard.exe not found. Pass -ExePath or install the module."
-    return
+if (-not (Get-Module LISSTech.Billboard)) {
+    Import-Module LISSTech.Billboard -ErrorAction Stop
 }
 
 if (-not (Test-Path $OutputDir)) { New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null }
+$branding = New-BillboardBranding 'LISS Consulting'
 
 # Minimize everything for a clean background
 $shell = New-Object -ComObject Shell.Application
 $shell.MinimizeAll()
 Start-Sleep -Seconds 2
 
+# Single persistent STA runspace for all notifications
+$rs = [runspacefactory]::CreateRunspace()
+$rs.ApartmentState = 'STA'
+$rs.ThreadOptions = 'ReuseThread'
+$rs.Open()
+
 function Capture-Notification {
     param(
+        [LISSTech.Billboard.Models.BillboardConfig]$Notification,
         [string]$FileName,
-        [string]$Args,
         [int]$DelayMs = 4000
     )
 
-    $proc = Start-Process -FilePath $ExePath -ArgumentList $Args -PassThru
+    $ps = [powershell]::Create()
+    $ps.Runspace = $rs
+    [void]$ps.AddScript({
+        param($n)
+        Add-Type -AssemblyName PresentationFramework
+        $null = [LISSTech.Billboard.BillboardService]::Show($n)
+    }).AddArgument($Notification)
+
+    $handle = $ps.BeginInvoke()
     Start-Sleep -Milliseconds $DelayMs
 
     $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
@@ -59,40 +65,76 @@ function Capture-Notification {
 
     Write-Host "   OK $FileName.png" -ForegroundColor Green
 
-    if (-not $proc.HasExited) { $proc.WaitForExit(12000) }
-    if (-not $proc.HasExited) { $proc.Kill() }
+    $null = $handle.AsyncWaitHandle.WaitOne(15000)
+    try { $ps.EndInvoke($handle) } catch {}
+    $ps.Dispose()
 }
 
 Write-Host "`nCapturing Billboard screenshots" -ForegroundColor Cyan
 Write-Host "   Output: $OutputDir" -ForegroundColor DarkGray
-Write-Host "   Exe:    $ExePath" -ForegroundColor DarkGray
 Write-Host ""
-
-$msp = '--msp-name "LISS Consulting"'
 
 # -- Dark theme screenshots --
 
 Write-Host "   Toasts (dark):" -ForegroundColor DarkGray
 
-Capture-Notification 'toast-info-dark' "--type info --title `"Microsoft Teams Updated`" --message `"Microsoft Teams has been updated to version **1.7.00.26264**. No action is required.`" --theme dark --timeout 10 $msp"
+Capture-Notification -FileName 'toast-info-dark' -Notification (
+    New-BillboardNotification -Type Info `
+        -Title 'Microsoft Teams Updated' `
+        -Message 'Microsoft Teams has been updated to version **1.7.00.26264**. No action is required -- the update has already been applied. New features include improved meeting controls and faster file sharing.' `
+        -Branding $branding -Theme Dark -Timeout 10
+)
 
-Capture-Notification 'toast-alert-dark' "--type alert --title `"Password Expiring Soon`" --message `"Your Active Directory password will expire in **3 days** (April 11, 2026).`" --theme dark --timeout 10 $msp"
+Capture-Notification -FileName 'toast-alert-dark' -Notification (
+    New-BillboardNotification -Type Alert `
+        -Title 'Password Expiring Soon' `
+        -Message 'Your Active Directory password will expire in **3 days** (April 11, 2026).' `
+        -Branding $branding -Theme Dark -Timeout 10
+)
 
-Capture-Notification 'toast-question-dark' "--type question --title `"Restart Required`" --message `"A security update for **Windows 11** requires a restart.`" --theme dark --timeout 10 --buttons `"Restart Now:restart:primary;Remind in 4 Hours:defer:ghost:defer=4h`" $msp"
+Capture-Notification -FileName 'toast-question-dark' -Notification (
+    New-BillboardNotification -Type Question `
+        -Title 'Restart Required' `
+        -Message 'A security update for **Windows 11** requires a restart.' `
+        -Branding $branding -Theme Dark -Timeout 10 `
+        -Buttons @(
+            New-BillboardButton 'Restart Now' -Value restart -Style Primary
+            New-BillboardButton 'Remind in 4 Hours' -Value defer -Style Ghost -Defer 4h
+        )
+)
 
 Write-Host "   Modals (dark):" -ForegroundColor DarkGray
 
-Capture-Notification 'modal-warn-dark' "--type warn --title `"Storage Running Low`" --message `"Your system drive has **4.2 GB** of free space remaining.`" --theme dark --timeout 10 --modal $msp"
+Capture-Notification -FileName 'modal-warn-dark' -Notification (
+    New-BillboardNotification -Type Warn `
+        -Title 'Storage Running Low' `
+        -Message "Your system drive **C:\** has **4.2 GB** of free space remaining. When free space drops below 2 GB, system performance may degrade and Windows updates will stop installing.`n`n- Clear temporary files via *Disk Cleanup*`n- Move large files to **OneDrive** or a network share`n- Contact the helpdesk if you need assistance" `
+        -Branding $branding -Theme Dark -Timeout 10 -Modal
+)
 
-Capture-Notification 'modal-critical-dark' "--type critical --title `"Endpoint Protection Disabled`" --message `"**Microsoft Defender** real-time protection has been disabled on this device.`" --theme dark --timeout 10 --modal $msp"
+Capture-Notification -FileName 'modal-critical-dark' -Notification (
+    New-BillboardNotification -Type Critical `
+        -Title 'Endpoint Protection Disabled' `
+        -Message "**Microsoft Defender** real-time protection has been disabled on this device. This leaves your system vulnerable to malware and other threats.`n`nIf you did not disable it intentionally, your device may already be compromised. Contact the helpdesk **immediately**." `
+        -Branding $branding -Theme Dark -Timeout 10 -Modal
+)
 
-Capture-Notification 'modal-question-dark' "--type question --title `"Restart Required`" --message `"A security update for **Windows 11** requires a restart to finish installing.`" --theme dark --timeout 10 --modal --buttons `"Restart Now:restart:primary;Remind in 4 Hours:defer:ghost:defer=4h`" $msp"
+Capture-Notification -FileName 'modal-question-dark' -Notification (
+    New-BillboardNotification -Type Question `
+        -Title 'Restart Required' `
+        -Message 'A security update for **Windows 11** requires a restart to finish installing. This update patches a critical vulnerability (CVE-2026-21001) and should be applied as soon as possible.' `
+        -Branding $branding -Theme Dark -Timeout 10 -Modal `
+        -Buttons @(
+            New-BillboardButton 'Restart Now' -Value restart -Style Primary
+            New-BillboardButton 'Remind in 4 Hours' -Value defer -Style Ghost -Defer 4h
+        )
+)
 
 # -- Pause for theme switch --
 
 Write-Host ""
 Write-Host "   >> Switch Windows to LIGHT theme (Settings > Personalization > Colors)" -ForegroundColor Yellow
-Write-Host "   >> Set a light/white desktop wallpaper" -ForegroundColor Yellow
+Write-Host "   >> Set a light desktop wallpaper" -ForegroundColor Yellow
 Write-Host "   >> Press Enter when ready..." -ForegroundColor Yellow
 $null = Read-Host
 
@@ -103,19 +145,49 @@ Start-Sleep -Seconds 6
 
 Write-Host "   Toasts (light):" -ForegroundColor DarkGray
 
-Capture-Notification 'toast-warn-light' "--type warn --title `"Storage Running Low`" --message `"Your system drive has **4.2 GB** of free space remaining.`" --theme light --timeout 10 $msp"
+Capture-Notification -FileName 'toast-warn-light' -Notification (
+    New-BillboardNotification -Type Warn `
+        -Title 'Storage Running Low' `
+        -Message "Your system drive **C:\** has **4.2 GB** of free space remaining. When free space drops below 2 GB, system performance may degrade." `
+        -Branding $branding -Theme Light -Timeout 10
+)
 
-Capture-Notification 'toast-critical-light' "--type critical --title `"Endpoint Protection Disabled`" --message `"**Microsoft Defender** real-time protection has been disabled.`" --theme light --timeout 10 $msp"
+Capture-Notification -FileName 'toast-critical-light' -Notification (
+    New-BillboardNotification -Type Critical `
+        -Title 'Endpoint Protection Disabled' `
+        -Message '**Microsoft Defender** real-time protection has been disabled on this device.' `
+        -Branding $branding -Theme Light -Timeout 10
+)
 
 Write-Host "   Modals (light):" -ForegroundColor DarkGray
 
-Capture-Notification 'modal-info-light' "--type info --title `"Microsoft Teams Updated`" --message `"Microsoft Teams has been updated to version **1.7.00.26264**. No action is required.`" --theme light --timeout 10 --modal $msp"
+Capture-Notification -FileName 'modal-info-light' -Notification (
+    New-BillboardNotification -Type Info `
+        -Title 'Microsoft Teams Updated' `
+        -Message 'Microsoft Teams has been updated to version **1.7.00.26264**. No action is required -- the update has already been applied.' `
+        -Branding $branding -Theme Light -Timeout 10 -Modal
+)
 
-Capture-Notification 'modal-alert-light' "--type alert --title `"Password Expiring Soon`" --message `"Your password will expire in **3 days**. Please change it before it expires.`" --theme light --timeout 10 --modal $msp"
+Capture-Notification -FileName 'modal-alert-light' -Notification (
+    New-BillboardNotification -Type Alert `
+        -Title 'Password Expiring Soon' `
+        -Message 'Your Active Directory password will expire in **3 days** (April 11, 2026). Please change your password before it expires to avoid being locked out.' `
+        -Branding $branding -Theme Light -Timeout 10 -Modal
+)
 
-Capture-Notification 'modal-question-light' "--type question --title `"Chrome Update Available`" --message `"Google Chrome **131.0.6778** is ready to install.`" --theme light --timeout 10 --modal --buttons `"Update Now:update:primary;Remind Tomorrow:defer:ghost:defer=1d`" $msp"
+Capture-Notification -FileName 'modal-question-light' -Notification (
+    New-BillboardNotification -Type Question `
+        -Title 'Chrome Update Available' `
+        -Message 'Google Chrome **131.0.6778** is ready to install. The browser will restart after updating.' `
+        -Branding $branding -Theme Light -Timeout 10 -Modal `
+        -Buttons @(
+            New-BillboardButton 'Update Now' -Value update -Style Primary
+            New-BillboardButton 'Remind Tomorrow' -Value defer -Style Ghost -Defer 1d
+        )
+)
 
 # Cleanup
+$rs.Close()
 $shell.UndoMinimizeAll()
 
 Write-Host ""
