@@ -18,6 +18,37 @@ psgallery_key := env("PSGALLERY_API_KEY", "")
 default:
     @just --list
 
+# ── Version ─────────────────────────────────────────────────────────────────
+
+# Bump version (CalVer YY.DOY.patch) in module manifest
+[script('pwsh', '-NoProfile')]
+[extension('.ps1')]
+bump:
+    $ErrorActionPreference = 'Stop'
+    $psd = '{{ justfile_directory() }}/LISSTech.Billboard.psd1'
+    $content = Get-Content $psd -Raw
+    if ($content -match "ModuleVersion\s*=\s*'([^']+)'") {
+        $current = $Matches[1]
+    } else {
+        Write-Error "Could not read version from psd1"
+        exit 1
+    }
+
+    $parts = $current -split '\.'
+    $yy = (Get-Date).Year % 100
+    $doy = (Get-Date).DayOfYear
+    if ([int]$parts[0] -eq $yy -and [int]$parts[1] -eq $doy) {
+        $patch = [int]$parts[2] + 1
+    } else {
+        $patch = 0
+    }
+    $new = "$yy.$doy.$patch"
+
+    Write-Host "`n🔖 Bumping version: $current → $new" -ForegroundColor Cyan
+    $content = $content -replace "ModuleVersion\s*=\s*'[^']+'", "ModuleVersion     = '$new'"
+    Set-Content $psd $content -NoNewline
+    Write-Host "   ✅ LISSTech.Billboard.psd1 updated" -ForegroundColor Green
+
 # ── Build ───────────────────────────────────────────────────────────────────
 
 # Build DLL + exe (Debug)
