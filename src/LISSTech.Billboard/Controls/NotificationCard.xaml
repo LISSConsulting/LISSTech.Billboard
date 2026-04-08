@@ -101,8 +101,8 @@
                Stretch="Uniform"
                HorizontalAlignment="Right"
                VerticalAlignment="Bottom"
-               Width="220"
-               Margin="0,0,-20,0"
+               Width="180"
+               Margin="0,0,12,0"
                Opacity="0.12"
                IsHitTestVisible="False" />
 

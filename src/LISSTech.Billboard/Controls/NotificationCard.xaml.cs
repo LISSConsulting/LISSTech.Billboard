@@ -216,6 +216,7 @@ public partial class NotificationCard : UserControl
                 // Side panel for modals — background is baked into illustrations
                 IllustrationPanel.Visibility = Visibility.Visible;
                 IllustrationPanelImage.Source = bitmap;
+                IllustrationPanelImage.Stretch = Stretch.UniformToFill;
                 IllustrationImage.Visibility = Visibility.Collapsed;
                 // Subtle header tint — slightly different shade from card body
                 HeaderBorder.Background = new SolidColorBrush(
