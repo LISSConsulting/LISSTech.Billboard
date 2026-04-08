@@ -6,14 +6,10 @@
     Run on a clean VM with 1920x1080 resolution for best results.
     Requires the module to be published first (just publish).
 .EXAMPLE
-    # From the project root:
-    powershell -STA -File scripts/Capture-Screenshots.ps1
-.EXAMPLE
-    # Standalone — drop next to the module folder and run:
-    powershell -STA -File Capture-Screenshots.ps1 -ModulePath .\LISSTech.Billboard\LISSTech.Billboard.psd1
+    Import-Module LISSTech.Billboard
+    powershell -STA -File Capture-Screenshots.ps1
 #>
 param(
-    [string]$ModulePath = (Join-Path $PSScriptRoot '..\Release\LISSTech.Billboard\LISSTech.Billboard.psd1'),
     [string]$OutputDir = (Join-Path $PSScriptRoot 'screenshots')
 )
 
@@ -21,14 +17,12 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-if (-not (Test-Path $ModulePath)) {
-    Write-Error "Module not found at $ModulePath — run 'just release' first."
-    return
+# Use already-imported module or auto-discover from PSModulePath
+if (-not (Get-Module LISSTech.Billboard)) {
+    Import-Module LISSTech.Billboard -ErrorAction Stop
 }
 
 if (-not (Test-Path $OutputDir)) { New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null }
-
-Import-Module $ModulePath -Force
 $branding = New-BillboardBranding 'LISS Consulting'
 
 # Minimize everything for a clean background
