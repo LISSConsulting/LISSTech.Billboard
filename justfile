@@ -33,9 +33,10 @@ build:
     Write-Host "   ✅ Build complete" -ForegroundColor Green
 
 # Build Release and assemble PS module in Release/
+[private]
 [script('pwsh', '-NoProfile')]
 [extension('.ps1')]
-publish:
+assemble:
     $ErrorActionPreference = 'Stop'
     $outDir = '{{ release_dir }}'
     $assemblyDir = '{{ assembly_dir }}'
@@ -92,7 +93,7 @@ smoke:
     $moduleDir = '{{ release_dir }}'
     $manifest = Join-Path $moduleDir 'LISSTech.Billboard.psd1'
     if (-not (Test-Path $manifest)) {
-        Write-Host "`n❌ Module not found — run 'just publish' first." -ForegroundColor Red
+        Write-Host "`n❌ Module not found — run 'just release' first." -ForegroundColor Red
         exit 1
     }
 
@@ -238,7 +239,7 @@ sign:
 # Build Release, sign, and assemble final module
 [script('pwsh', '-NoProfile')]
 [extension('.ps1')]
-release: test publish sign
+release: test assemble sign
     $dll = Get-Item '{{ assembly_dir }}/LISSTech.Billboard.dll'
     $exe = Get-Item '{{ bin_dir }}/Billboard.exe'
     $version = (Import-PowerShellDataFile '{{ release_dir }}/LISSTech.Billboard.psd1').ModuleVersion
@@ -250,6 +251,9 @@ release: test publish sign
     Write-Host ""
 
 # ── Publish ─────────────────────────────────────────────────────────────────
+
+# Build, sign, and publish to PowerShell Gallery
+publish: release publish-gallery
 
 # Publish module to PowerShell Gallery (standalone, for retries)
 [script('pwsh', '-NoProfile')]
