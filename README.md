@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src/LISSTech.Billboard/Assets/Brand/liss-logo.png" alt="LISS Technologies" width="72" height="72">
+  <img src="docs/assets/brand/billboard-icon.png" alt="Billboard" width="72" height="72">
 </p>
 
 <p align="center">
@@ -337,7 +337,7 @@ Configure via `.env` file (see `.env.example`):
   <img src="https://img.shields.io/powershellgallery/v/LISSTech.Billboard?style=for-the-badge&label=CalVer&color=FF6B9D&labelColor=000" alt="CalVer">
   <img src="https://img.shields.io/badge/Code_Signed-EV_Certificate-4ECDC4?style=for-the-badge&labelColor=000" alt="Signed">
   <br/><br/>
-  <img src="src/LISSTech.Billboard/Assets/Brand/liss-logo.png" alt="LISS Technologies" width="36" height="36">
+  <img src="docs/assets/brand/billboard-icon.png" alt="Billboard" width="36" height="36">
   <br/>
   <sub><strong>LISS Consulting, Corp.</strong> · <em>Endpoint notifications that don't suck.</em></sub>
 </p>
