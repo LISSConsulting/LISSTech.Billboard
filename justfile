@@ -91,6 +91,30 @@ smoke:
     $themes  = @('Light', 'Dark')
     $modes   = @($false, $true)  # toast, modal
 
+    # Realistic notification scenarios per type
+    $scenarios = @{
+        Info = @{
+            Title   = 'Microsoft Teams Updated'
+            Message = 'Microsoft Teams has been updated to version **1.7.00.26264**. No action is required — the update has already been applied. New features include improved meeting controls and faster file sharing.'
+        }
+        Warn = @{
+            Title   = 'Storage Running Low'
+            Message = "Your system drive **C:\\** has **4.2 GB** of free space remaining. When free space drops below 2 GB, system performance may degrade and Windows updates will stop installing.`n`n- Clear temporary files via *Disk Cleanup*`n- Move large files to **OneDrive** or a network share`n- Contact the helpdesk if you need assistance"
+        }
+        Alert = @{
+            Title   = 'Password Expiring Soon'
+            Message = 'Your Active Directory password will expire in **3 days** (April 11, 2026). Please change your password before it expires to avoid being locked out of your account and VPN access.'
+        }
+        Critical = @{
+            Title   = 'Endpoint Protection Disabled'
+            Message = "**Microsoft Defender** real-time protection has been disabled on this device. This leaves your system vulnerable to malware and other threats.`n`nIf you did not disable it intentionally, your device may already be compromised. Contact the helpdesk **immediately**."
+        }
+        Question = @{
+            Title   = 'Restart Required'
+            Message = 'A security update for **Windows 11** requires a restart to finish installing. This update patches a critical vulnerability (CVE-2026-21001) and should be applied as soon as possible.'
+        }
+    }
+
     $variants = [System.Collections.Generic.List[hashtable]]::new()
     foreach ($type in $types) {
         foreach ($theme in $themes) {
@@ -103,14 +127,15 @@ smoke:
     $total = $variants.Count
     for ($i = 0; $i -lt $total; $i++) {
         $v = $variants[$i]
+        $s = $scenarios[$v.Type]
         $mode = if ($v.Modal) { 'modal' } else { 'toast' }
         $label = '{0}/{1}  {2} · {3} · {4}' -f ($i + 1), $total, $v.Type.ToLower(), $mode, $v.Theme.ToLower()
         Write-Host "  [$label]" -ForegroundColor Cyan
 
         $params = @{
             Type     = $v.Type
-            Title    = "$($v.Type) — $($v.Theme) $mode"
-            Message  = "This is a **$($v.Type.ToLower())** notification shown as a **$mode** in **$($v.Theme.ToLower())** theme."
+            Title    = $s.Title
+            Message  = $s.Message
             Branding = $branding
             Theme    = $v.Theme
             Timeout  = 4
@@ -121,8 +146,8 @@ smoke:
         if ($v.Type -eq 'Question') {
             $params.Timeout = 0
             $params.Buttons = @(
-                New-BillboardButton 'Update Now' -Value update -Style Primary
-                New-BillboardButton 'Remind Later' -Value defer -Style Ghost -Defer 1h
+                New-BillboardButton 'Restart Now' -Value restart -Style Primary
+                New-BillboardButton 'Remind in 4 Hours' -Value defer -Style Ghost -Defer 4h
             )
             $result = Request-Billboard (New-BillboardNotification @params)
             $clicked = if ($result.Timeout) { 'timeout' } elseif ($result.Dismissed) { 'dismissed' } else { $result.Button }
