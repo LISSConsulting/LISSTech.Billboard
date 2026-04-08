@@ -97,7 +97,7 @@ Write-Host "   >> Press Enter when ready..." -ForegroundColor Yellow
 $null = Read-Host
 
 $shell.MinimizeAll()
-Start-Sleep -Seconds 4
+Start-Sleep -Seconds 6
 
 # -- Light theme screenshots --
 
