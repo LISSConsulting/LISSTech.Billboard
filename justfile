@@ -72,6 +72,68 @@ test:
     & dotnet test 'tests/LISSTech.Billboard.Tests/LISSTech.Billboard.Tests.csproj' --nologo -v:q
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+# Visual smoke test — cycles through all notification variants via the PS module
+[script('pwsh', '-NoProfile')]
+[extension('.ps1')]
+smoke:
+    $ErrorActionPreference = 'Stop'
+    $moduleDir = '{{ release_dir }}'
+    $manifest = Join-Path $moduleDir 'LISSTech.Billboard.psd1'
+    if (-not (Test-Path $manifest)) {
+        Write-Host 'Module not found — run "just publish" first.' -ForegroundColor Red
+        exit 1
+    }
+
+    Import-Module $manifest -Force
+
+    $branding = New-BillboardBranding 'LISS Consulting'
+    $types   = @('Info', 'Warn', 'Alert', 'Critical', 'Question')
+    $themes  = @('Light', 'Dark')
+    $modes   = @($false, $true)  # toast, modal
+
+    $variants = [System.Collections.Generic.List[hashtable]]::new()
+    foreach ($type in $types) {
+        foreach ($theme in $themes) {
+            foreach ($modal in $modes) {
+                $variants.Add(@{ Type = $type; Theme = $theme; Modal = $modal })
+            }
+        }
+    }
+
+    $total = $variants.Count
+    for ($i = 0; $i -lt $total; $i++) {
+        $v = $variants[$i]
+        $mode = if ($v.Modal) { 'modal' } else { 'toast' }
+        $label = '{0}/{1}  {2} · {3} · {4}' -f ($i + 1), $total, $v.Type.ToLower(), $mode, $v.Theme.ToLower()
+        Write-Host "  [$label]" -ForegroundColor Cyan
+
+        $params = @{
+            Type     = $v.Type
+            Title    = "$($v.Type) — $($v.Theme) $mode"
+            Message  = "This is a **$($v.Type.ToLower())** notification shown as a **$mode** in **$($v.Theme.ToLower())** theme."
+            Branding = $branding
+            Theme    = $v.Theme
+            Timeout  = 4
+        }
+        if ($v.Modal) { $params.Modal = $true }
+
+        # Question type gets buttons with a defer option
+        if ($v.Type -eq 'Question') {
+            $params.Timeout = 0
+            $params.Buttons = @(
+                New-BillboardButton 'Update Now' -Value update -Style Primary
+                New-BillboardButton 'Remind Later' -Value defer -Style Ghost -Defer 1h
+            )
+            $result = Request-Billboard (New-BillboardNotification @params)
+            $clicked = if ($result.Timeout) { 'timeout' } elseif ($result.Dismissed) { 'dismissed' } else { $result.Button }
+            Write-Host "    -> $clicked" -ForegroundColor DarkGray
+        } else {
+            $null = Show-Billboard (New-BillboardNotification @params)
+        }
+    }
+
+    Write-Host "`n  All $total variants shown." -ForegroundColor Green
+
 # Remove Release/ and obj/ directories
 [script('pwsh', '-NoProfile')]
 [extension('.ps1')]
