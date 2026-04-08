@@ -311,7 +311,7 @@ public partial class NotificationCard : UserControl
             NotificationType.Info     => "info",
             NotificationType.Warn     => "warn",
             NotificationType.Alert    => "alert",
-            NotificationType.Critical => null,
+            NotificationType.Critical => "critical",
             NotificationType.Question => "question",
             _                         => null
         };
