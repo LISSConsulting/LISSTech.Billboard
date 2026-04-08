@@ -8,10 +8,13 @@
 .EXAMPLE
     # From the project root:
     powershell -STA -File scripts/Capture-Screenshots.ps1
+.EXAMPLE
+    # Standalone — drop next to the module folder and run:
+    powershell -STA -File Capture-Screenshots.ps1 -ModulePath .\LISSTech.Billboard\LISSTech.Billboard.psd1
 #>
 param(
     [string]$ModulePath = (Join-Path $PSScriptRoot '..\Release\LISSTech.Billboard\LISSTech.Billboard.psd1'),
-    [string]$OutputDir = (Join-Path $PSScriptRoot '..\docs\assets\screenshots')
+    [string]$OutputDir = (Join-Path $PSScriptRoot 'screenshots')
 )
 
 $ErrorActionPreference = 'Stop'
