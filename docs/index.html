@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Billboard — Rich WPF Notifications for Windows Endpoints | LISS Technologies</title>
+<meta name="description" content="Beautiful toast and modal notifications for Windows endpoints. Five severity types, dark and light themes, PowerShell scriptable. Built for RMM, MDM, and MSP automation.">
+<meta name="keywords" content="Windows notifications, WPF, PowerShell, toast, modal, endpoint management, RMM, MDM, MSP, LISS Technologies, Billboard">
+<meta property="og:title" content="Billboard — Rich WPF Notifications for Windows Endpoints">
+<meta property="og:description" content="Beautiful toast and modal notifications for Windows. Five severity types, dark and light themes, PowerShell scriptable.">
+<meta property="og:image" content="https://raw.githubusercontent.com/LISSConsulting/LISSTech.Billboard/trunk/docs/screenshots/modal-question-dark.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="https://raw.githubusercontent.com/LISSConsulting/LISSTech.Billboard/trunk/src/LISSTech.Billboard/Assets/Brand/liss-logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   NEOBRUTAL DESIGN SYSTEM
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Brand */
+  --blue: #2E71B8;
+  --red: #DA5657;
+  --amber: #C49A2A;
+  --orange: #D4782E;
+
+  /* Neobrutal palette */
+  --black: #0A0A0F;
+  --white: #FAFAF8;
+  --cream: #F0EDE6;
+  --ink: #1A1A24;
+  --border: 3px solid var(--black);
+  --shadow: 6px 6px 0 var(--black);
+  --shadow-sm: 4px 4px 0 var(--black);
+  --shadow-lg: 8px 8px 0 var(--black);
+  --radius: 0;
+
+  /* Type */
+  --font-display: 'Outfit', sans-serif;
+  --font-mono: 'Space Mono', 'JetBrains Mono', monospace;
+  --font-body: 'Outfit', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--cream);
+  color: var(--black);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+::selection {
+  background: var(--red);
+  color: white;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILITY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.35rem 0.8rem;
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  background: var(--white);
+}
+
+.tag--blue { background: var(--blue); color: white; }
+.tag--red { background: var(--red); color: white; }
+.tag--amber { background: var(--amber); color: var(--black); }
+.tag--orange { background: var(--orange); color: white; }
+.tag--ink { background: var(--ink); color: white; }
+
+.btn {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1rem 2rem;
+  border: var(--border);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  text-decoration: none;
+}
+
+.btn:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 4px 4px 0 var(--black);
+  text-decoration: none;
+}
+
+.btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+.btn--primary { background: var(--blue); color: white; }
+.btn--red { background: var(--red); color: white; }
+.btn--ghost { background: var(--white); color: var(--black); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOPBAR
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--white);
+  border-bottom: var(--border);
+  padding: 0.8rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--black);
+  text-decoration: none;
+}
+
+.topbar__brand img {
+  width: 32px;
+  height: 32px;
+}
+
+.topbar__links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.topbar__links a {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--black);
+}
+
+.topbar__links a:hover { color: var(--blue); text-decoration: none; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.hero {
+  margin-top: 60px;
+  padding: 6rem 0 4rem;
+  background: var(--ink);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(46,113,184,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: -40%;
+  left: -10%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(218,86,87,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero__inner {
+  position: relative;
+  z-index: 1;
+}
+
+.hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--amber);
+  margin-bottom: 2rem;
+}
+
+.hero__badge::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--amber);
+  border-radius: 50%;
+}
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  margin-bottom: 1.5rem;
+}
+
+.hero h1 span {
+  display: block;
+  background: linear-gradient(135deg, var(--blue), var(--red));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero__sub {
+  font-size: 1.25rem;
+  line-height: 1.6;
+  max-width: 600px;
+  opacity: 0.8;
+  margin-bottom: 2.5rem;
+}
+
+.hero__actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 3rem;
+}
+
+.hero__install {
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.15);
+  padding: 0.8rem 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.hero__install:hover { border-color: var(--blue); }
+.hero__install code { color: white; }
+.hero__install small { opacity: 0.5; font-size: 0.7rem; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCREENSHOT SHOWCASE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.showcase {
+  padding: 5rem 0;
+}
+
+.showcase__header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.showcase__header h2 {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+}
+
+.showcase__header p {
+  font-size: 1.1rem;
+  opacity: 0.7;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.showcase__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.showcase__card {
+  border: var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  background: var(--white);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.showcase__card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 var(--black);
+}
+
+.showcase__card img {
+  width: 100%;
+  display: block;
+}
+
+.showcase__card figcaption {
+  padding: 1rem 1.25rem;
+  border-top: var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.showcase__card figcaption strong {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.showcase__hero-img {
+  grid-column: 1 / -1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FEATURES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.features {
+  padding: 5rem 0;
+  background: var(--white);
+  border-top: var(--border);
+  border-bottom: var(--border);
+}
+
+.features h2 {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.features__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.feature {
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 2rem;
+  background: var(--cream);
+}
+
+.feature__icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  display: block;
+  width: 56px;
+  height: 56px;
+  line-height: 56px;
+  text-align: center;
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.feature h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.15rem;
+  margin-bottom: 0.75rem;
+}
+
+.feature p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  opacity: 0.75;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TYPES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.types {
+  padding: 5rem 0;
+}
+
+.types h2 {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.types__row {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.type-card {
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem 2rem;
+  min-width: 200px;
+  text-align: center;
+}
+
+.type-card__name {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+}
+
+.type-card__desc {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.type-card--info { background: #E8F0FA; border-color: var(--blue); }
+.type-card--warn { background: #FBF7F0; border-color: var(--amber); }
+.type-card--alert { background: #FBF4F0; border-color: var(--orange); }
+.type-card--critical { background: #FBF0F1; border-color: var(--red); }
+.type-card--question { background: #E8F0FA; border-color: var(--blue); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CODE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.code-section {
+  padding: 5rem 0;
+  background: var(--ink);
+  color: white;
+  border-top: var(--border);
+  border-bottom: var(--border);
+}
+
+.code-section h2 {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+}
+
+.code-section__sub {
+  opacity: 0.6;
+  margin-bottom: 3rem;
+  font-size: 1.1rem;
+}
+
+.code-block {
+  background: rgba(0,0,0,0.4);
+  border: 2px solid rgba(255,255,255,0.1);
+  padding: 2rem;
+  overflow-x: auto;
+  margin-bottom: 2rem;
+}
+
+.code-block pre {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.9);
+}
+
+.code-block .comment { color: rgba(255,255,255,0.35); }
+.code-block .string { color: #C7F464; }
+.code-block .keyword { color: #7DB4E6; }
+.code-block .variable { color: #E0883E; }
+.code-block .cmdlet { color: #E87A7B; }
+
+.code-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: -2px;
+  position: relative;
+  z-index: 1;
+}
+
+.code-tab {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1.5rem;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-bottom: none;
+  background: transparent;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+}
+
+.code-tab--active {
+  background: rgba(0,0,0,0.4);
+  color: white;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CTA
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.cta {
+  padding: 6rem 0;
+  text-align: center;
+}
+
+.cta h2 {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.cta p {
+  font-size: 1.15rem;
+  opacity: 0.7;
+  margin-bottom: 2.5rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cta__install {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  background: var(--ink);
+  color: white;
+  padding: 1.2rem 2.5rem;
+  border: var(--border);
+  box-shadow: var(--shadow-lg);
+  display: inline-block;
+  margin-bottom: 1.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.footer {
+  padding: 2rem;
+  border-top: var(--border);
+  background: var(--white);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--black);
+}
+
+.footer__brand img { width: 24px; height: 24px; }
+
+.footer__links {
+  display: flex;
+  gap: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.footer__links a { color: var(--black); opacity: 0.5; }
+.footer__links a:hover { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .features__grid { grid-template-columns: 1fr; }
+  .showcase__grid { grid-template-columns: 1fr; }
+  .types__row { flex-direction: column; align-items: center; }
+}
+
+@media (max-width: 600px) {
+  .topbar__links { display: none; }
+  .hero h1 { font-size: 2.5rem; }
+  .hero { padding: 4rem 0 3rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GRAIN OVERLAY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     TOPBAR
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<nav class="topbar">
+  <a href="#" class="topbar__brand">
+    <img src="https://raw.githubusercontent.com/LISSConsulting/LISSTech.Billboard/trunk/src/LISSTech.Billboard/Assets/Brand/liss-logo.png" alt="LISS">
+    Billboard
+  </a>
+  <div class="topbar__links">
+    <a href="#showcase">Screenshots</a>
+    <a href="#features">Features</a>
+    <a href="#code">Usage</a>
+    <a href="https://github.com/LISSConsulting/LISSTech.Billboard">GitHub</a>
+    <a href="https://www.powershellgallery.com/packages/LISSTech.Billboard" class="btn btn--primary" style="padding:0.5rem 1rem;font-size:0.7rem;box-shadow:3px 3px 0 var(--black);">Install</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     HERO
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<section class="hero">
+  <div class="container hero__inner">
+    <div class="hero__badge">LISS Technologies</div>
+    <h1>
+      Endpoint<br>notifications<br>
+      <span>that don't suck.</span>
+    </h1>
+    <p class="hero__sub">
+      Rich WPF toast and modal notifications for Windows endpoints.
+      Five severity types, dark and light themes, branded illustrations.
+      Scriptable via PowerShell. Built for RMM, MDM, and MSP automation.
+    </p>
+    <div class="hero__actions">
+      <a href="https://github.com/LISSConsulting/LISSTech.Billboard" class="btn btn--primary">View on GitHub</a>
+      <a href="https://www.powershellgallery.com/packages/LISSTech.Billboard" class="btn btn--ghost">PSGallery</a>
+    </div>
+    <div class="hero__install" onclick="navigator.clipboard.writeText('Install-Module LISSTech.Billboard')">
+      <code>Install-Module LISSTech.Billboard</code>
+      <small>click to copy</small>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SHOWCASE
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<section class="showcase container" id="showcase">
+  <div class="showcase__header">
+    <h2>See it in action</h2>
+    <p>Toast and modal notifications on a real Windows 11 desktop.</p>
+  </div>
+  <div class="showcase__grid">
+    <figure class="showcase__card showcase__hero-img">
+      <img src="screenshots/modal-question-dark.png" alt="Question modal — dark theme" loading="lazy">
+      <figcaption>
+        <strong>Question Modal</strong>
+        <span class="tag tag--blue">Dark</span>
+      </figcaption>
+    </figure>
+    <figure class="showcase__card">
+      <img src="screenshots/toast-info-dark.png" alt="Info toast — dark theme" loading="lazy">
+      <figcaption>
+        <strong>Info Toast</strong>
+        <span class="tag tag--ink">Dark</span>
+      </figcaption>
+    </figure>
+    <figure class="showcase__card">
+      <img src="screenshots/toast-critical-light.png" alt="Critical toast — light theme" loading="lazy">
+      <figcaption>
+        <strong>Critical Toast</strong>
+        <span class="tag tag--red">Light</span>
+      </figcaption>
+    </figure>
+    <figure class="showcase__card">
+      <img src="screenshots/modal-warn-dark.png" alt="Warning modal — dark theme" loading="lazy">
+      <figcaption>
+        <strong>Warning Modal</strong>
+        <span class="tag tag--amber">Dark</span>
+      </figcaption>
+    </figure>
+    <figure class="showcase__card">
+      <img src="screenshots/modal-alert-light.png" alt="Alert modal — light theme" loading="lazy">
+      <figcaption>
+        <strong>Alert Modal</strong>
+        <span class="tag tag--orange">Light</span>
+      </figcaption>
+    </figure>
+    <figure class="showcase__card">
+      <img src="screenshots/modal-critical-dark.png" alt="Critical modal — dark theme" loading="lazy">
+      <figcaption>
+        <strong>Critical Modal</strong>
+        <span class="tag tag--red">Dark</span>
+      </figcaption>
+    </figure>
+    <figure class="showcase__card">
+      <img src="screenshots/modal-question-light.png" alt="Question modal — light theme" loading="lazy">
+      <figcaption>
+        <strong>Question Modal</strong>
+        <span class="tag tag--blue">Light</span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     NOTIFICATION TYPES
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<section class="types container" id="types">
+  <h2>Five severity types</h2>
+  <div class="types__row">
+    <div class="type-card type-card--info">
+      <div class="type-card__name">Info</div>
+      <div class="type-card__desc">Updates, policies, FYI</div>
+    </div>
+    <div class="type-card type-card--warn">
+      <div class="type-card__name">Warning</div>
+      <div class="type-card__desc">Low disk, certificate expiry</div>
+    </div>
+    <div class="type-card type-card--alert">
+      <div class="type-card__name">Alert</div>
+      <div class="type-card__desc">Password expiring, deadlines</div>
+    </div>
+    <div class="type-card type-card--critical">
+      <div class="type-card__name">Critical</div>
+      <div class="type-card__desc">Security incidents, protection disabled</div>
+    </div>
+    <div class="type-card type-card--question">
+      <div class="type-card__name">Question</div>
+      <div class="type-card__desc">Restart required, user decisions</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     FEATURES
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<section class="features" id="features">
+  <div class="container">
+    <h2>Built for IT teams</h2>
+    <div class="features__grid">
+      <div class="feature">
+        <div class="feature__icon" style="background:var(--blue);color:white;">T</div>
+        <h3>Toast & Modal</h3>
+        <p>Non-intrusive bottom-right toasts for FYI. Full-screen centered modals when you need attention. Both support buttons and user input.</p>
+      </div>
+      <div class="feature">
+        <div class="feature__icon" style="background:var(--ink);color:white;">D</div>
+        <h3>Dark & Light</h3>
+        <p>Auto-detects Windows theme or force a specific one. Every type has matched illustrations, colors, and card backgrounds for both modes.</p>
+      </div>
+      <div class="feature">
+        <div class="feature__icon" style="background:var(--amber);color:var(--black);">B</div>
+        <h3>Branded</h3>
+        <p>Set your org name and logo. The context footer, illustration panel, and header all adapt. Your users see your brand, not generic system chrome.</p>
+      </div>
+      <div class="feature">
+        <div class="feature__icon" style="background:var(--red);color:white;">S</div>
+        <h3>SYSTEM Context</h3>
+        <p>Use <code>-AsUser</code> from SYSTEM context. Billboard routes through ServiceUI to show notifications in the logged-on user's desktop session.</p>
+      </div>
+      <div class="feature">
+        <div class="feature__icon" style="background:var(--orange);color:white;">R</div>
+        <h3>Rich Results</h3>
+        <p>Request-Billboard returns which button was clicked, its value, whether the user deferred, dismissed, or timed out. Full JSON over named pipes for IPC.</p>
+      </div>
+      <div class="feature">
+        <div class="feature__icon" style="background:#C7F464;color:var(--black);">E</div>
+        <h3>EV Code Signed</h3>
+        <p>Every DLL, exe, and PowerShell file is signed with a LISS Consulting EV certificate. No SmartScreen warnings, no execution policy issues.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     CODE EXAMPLES
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<section class="code-section" id="code">
+  <div class="container">
+    <h2>Dead simple API</h2>
+    <p class="code-section__sub">Builder cmdlets compose the notification. Action cmdlets show it.</p>
+
+    <div class="code-tabs">
+      <div class="code-tab code-tab--active">Toast</div>
+      <div class="code-tab">Modal + Buttons</div>
+      <div class="code-tab">SYSTEM Context</div>
+    </div>
+
+    <div class="code-block" id="code-toast">
+<pre><span class="comment"># Fire-and-forget info toast</span>
+<span class="variable">$branding</span> = <span class="cmdlet">New-BillboardBranding</span> <span class="string">'Contoso IT'</span>
+
+<span class="cmdlet">Show-Billboard</span> (<span class="cmdlet">New-BillboardNotification</span> <span class="keyword">-Type</span> Info `
+    <span class="keyword">-Title</span> <span class="string">'Chrome Updated'</span> `
+    <span class="keyword">-Message</span> <span class="string">'Google Chrome has been updated to version **131.0.6778**.'</span> `
+    <span class="keyword">-Branding</span> <span class="variable">$branding</span>)</pre>
+    </div>
+
+    <div class="code-block" id="code-modal" style="display:none">
+<pre><span class="comment"># Modal that waits for user response</span>
+<span class="variable">$buttons</span> = @(
+    <span class="cmdlet">New-BillboardButton</span> <span class="string">'Restart Now'</span> <span class="keyword">-Value</span> restart <span class="keyword">-Style</span> Primary
+    <span class="cmdlet">New-BillboardButton</span> <span class="string">'Remind in 4 Hours'</span> <span class="keyword">-Value</span> defer <span class="keyword">-Style</span> Ghost <span class="keyword">-Defer</span> 4h
+)
+
+<span class="variable">$result</span> = <span class="cmdlet">Request-Billboard</span> (<span class="cmdlet">New-BillboardNotification</span> <span class="keyword">-Type</span> Question `
+    <span class="keyword">-Title</span> <span class="string">'Restart Required'</span> `
+    <span class="keyword">-Message</span> <span class="string">'A security update requires a restart.'</span> `
+    <span class="keyword">-Buttons</span> <span class="variable">$buttons</span> <span class="keyword">-Modal</span>)
+
+<span class="variable">$result</span>.Value  <span class="comment"># "restart" or "defer"</span></pre>
+    </div>
+
+    <div class="code-block" id="code-system" style="display:none">
+<pre><span class="comment"># From a SYSTEM-context script (Intune, N-central, etc.)</span>
+<span class="variable">$notification</span> = <span class="cmdlet">New-BillboardNotification</span> <span class="keyword">-Type</span> Critical `
+    <span class="keyword">-Title</span> <span class="string">'Endpoint Protection Disabled'</span> `
+    <span class="keyword">-Message</span> <span class="string">'**Microsoft Defender** has been disabled.'</span> `
+    <span class="keyword">-Branding</span> (<span class="cmdlet">New-BillboardBranding</span> <span class="string">'Contoso IT'</span>)
+
+<span class="comment"># Routes through Billboard.exe + ServiceUI.exe automatically</span>
+<span class="cmdlet">Show-Billboard</span> <span class="variable">$notification</span> <span class="keyword">-AsUser</span>
+
+<span class="comment"># Or wait for response</span>
+<span class="variable">$result</span> = <span class="cmdlet">Request-Billboard</span> <span class="variable">$notification</span> <span class="keyword">-AsUser</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     CTA
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<section class="cta">
+  <div class="container">
+    <h2>Get started in 10 seconds</h2>
+    <p>One command. No dependencies. .NET Framework 4.7.2 is pre-installed on every modern Windows machine.</p>
+    <div class="cta__install">Install-Module LISSTech.Billboard</div>
+    <br><br>
+    <a href="https://github.com/LISSConsulting/LISSTech.Billboard" class="btn btn--primary">View on GitHub</a>
+    &nbsp;
+    <a href="https://www.powershellgallery.com/packages/LISSTech.Billboard" class="btn btn--ghost">PSGallery</a>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<footer class="footer">
+  <div class="footer__brand">
+    <img src="https://raw.githubusercontent.com/LISSConsulting/LISSTech.Billboard/trunk/src/LISSTech.Billboard/Assets/Brand/liss-logo.png" alt="LISS">
+    LISS Consulting, Corp.
+  </div>
+  <div class="footer__links">
+    <a href="https://github.com/LISSConsulting/LISSTech.Billboard">GitHub</a>
+    <a href="https://www.powershellgallery.com/packages/LISSTech.Billboard">PSGallery</a>
+    <a href="https://github.com/LISSConsulting/LISSTech.Billboard/blob/trunk/LICENSE">Apache 2.0</a>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SCRIPTS
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<script>
+// Code tabs
+const tabs = document.querySelectorAll('.code-tab');
+const blocks = {
+  0: document.getElementById('code-toast'),
+  1: document.getElementById('code-modal'),
+  2: document.getElementById('code-system')
+};
+
+tabs.forEach((tab, i) => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('code-tab--active'));
+    tab.classList.add('code-tab--active');
+    Object.values(blocks).forEach(b => b.style.display = 'none');
+    blocks[i].style.display = 'block';
+  });
+});
+
+// Copy install command
+document.querySelectorAll('.hero__install, .cta__install').forEach(el => {
+  el.style.cursor = 'pointer';
+  el.addEventListener('click', () => {
+    navigator.clipboard.writeText('Install-Module LISSTech.Billboard');
+    const orig = el.innerHTML;
+    if (el.querySelector('small')) {
+      el.querySelector('small').textContent = 'copied!';
+      setTimeout(() => el.querySelector('small').textContent = 'click to copy', 2000);
+    }
+  });
+});
+
+// Animate elements on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.showcase__card, .feature, .type-card').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  observer.observe(el);
+});
+</script>
+
+</body>
+</html>
