@@ -334,7 +334,7 @@ Configure via `.env` file (see `.env.example`):
 
 <p align="center">
   <a href="https://www.powershellgallery.com/packages/LISSTech.Billboard"><img src="https://img.shields.io/powershellgallery/dt/LISSTech.Billboard?style=for-the-badge&label=Downloads&color=C7F464&labelColor=000" alt="Downloads"></a>
-  <img src="https://img.shields.io/badge/CalVer-26.98.2-FF6B9D?style=for-the-badge&labelColor=000" alt="CalVer">
+  <img src="https://img.shields.io/powershellgallery/v/LISSTech.Billboard?style=for-the-badge&label=CalVer&color=FF6B9D&labelColor=000" alt="CalVer">
   <img src="https://img.shields.io/badge/Code_Signed-EV_Certificate-4ECDC4?style=for-the-badge&labelColor=000" alt="Signed">
   <br/><br/>
   <img src="src/LISSTech.Billboard/Assets/Brand/liss-logo.png" alt="LISS Technologies" width="36" height="36">
