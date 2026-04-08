@@ -340,4 +340,6 @@ Configure via `.env` file (see `.env.example`):
   <img src="docs/assets/brand/billboard-icon.png" alt="Billboard" width="36" height="36">
   <br/>
   <sub><strong>LISS Consulting, Corp.</strong> · <em>Endpoint notifications that don't suck.</em></sub>
+  <br/>
+  <sub><a href="https://storyset.com">Illustrations by Storyset</a></sub>
 </p>

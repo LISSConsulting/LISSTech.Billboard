@@ -39,7 +39,7 @@
             Tags         = @('Windows', 'WPF', 'Notification', 'Toast', 'Modal', 'Endpoint', 'RMM', 'MDM', 'MSP', 'ServiceUI', 'Branding', 'DarkMode')
             LicenseUri   = 'https://github.com/LISSConsulting/LISSTech.Billboard/blob/trunk/LICENSE'
             ProjectUri   = 'https://github.com/LISSConsulting/LISSTech.Billboard'
-            ReleaseNotes = 'Initial release: five notification types (Info, Warn, Alert, Critical, Question), toast and modal modes, light and dark themes, branded illustrations, builder cmdlets, button deferral, ServiceUI support for SYSTEM context, EV code-signed.'
+            ReleaseNotes = 'Initial release: five notification types (Info, Warn, Alert, Critical, Question), toast and modal modes, light and dark themes, branded illustrations, builder cmdlets, button deferral, ServiceUI support for SYSTEM context, EV code-signed. Illustrations by Storyset (https://storyset.com).'
         }
     }
 }
