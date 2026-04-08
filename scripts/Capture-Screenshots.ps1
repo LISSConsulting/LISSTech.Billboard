@@ -40,7 +40,7 @@ function Capture-Notification {
     param(
         [LISSTech.Billboard.Models.BillboardConfig]$Notification,
         [string]$FileName,
-        [int]$DelayMs = 2200
+        [int]$DelayMs = 4000
     )
 
     $ps = [powershell]::Create()
