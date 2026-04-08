@@ -73,13 +73,58 @@ function Capture-Notification {
     $ps.Dispose()
 }
 
+$themeKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+$desktopKey = 'HKCU:\Control Panel\Desktop'
+$colorsKey = 'HKCU:\Control Panel\Colors'
+
+Add-Type @"
+using System.Runtime.InteropServices;
+public class Wallpaper {
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+    public const int SPI_SETDESKWALLPAPER = 0x0014;
+    public const int SPIF_UPDATEINIFILE = 0x01;
+    public const int SPIF_SENDCHANGE = 0x02;
+}
+"@
+
+function Set-WindowsTheme([bool]$Dark) {
+    $val = if ($Dark) { 0 } else { 1 }
+    Set-ItemProperty $themeKey -Name 'AppsUseLightTheme' -Value $val
+    Set-ItemProperty $themeKey -Name 'SystemUsesLightTheme' -Value $val
+
+    # Set solid desktop color (no wallpaper image)
+    [Wallpaper]::SystemParametersInfo([Wallpaper]::SPI_SETDESKWALLPAPER, 0, '', [Wallpaper]::SPIF_UPDATEINIFILE -bor [Wallpaper]::SPIF_SENDCHANGE) | Out-Null
+
+    if ($Dark) {
+        # Dark charcoal background
+        Set-ItemProperty $colorsKey -Name 'Background' -Value '26 26 36'
+    } else {
+        # Light warm gray background
+        Set-ItemProperty $colorsKey -Name 'Background' -Value '235 235 230'
+    }
+
+    # Force desktop refresh
+    [Wallpaper]::SystemParametersInfo([Wallpaper]::SPI_SETDESKWALLPAPER, 0, '', [Wallpaper]::SPIF_UPDATEINIFILE -bor [Wallpaper]::SPIF_SENDCHANGE) | Out-Null
+    Start-Sleep -Milliseconds 2000
+}
+
+# Save current state to restore later
+$origApps = (Get-ItemProperty $themeKey).AppsUseLightTheme
+$origSystem = (Get-ItemProperty $themeKey).SystemUsesLightTheme
+$origWallpaper = (Get-ItemProperty $desktopKey).Wallpaper
+$origBgColor = (Get-ItemProperty $colorsKey).Background
+
 Write-Host "`nCapturing Billboard screenshots" -ForegroundColor Cyan
 Write-Host "   Output: $OutputDir" -ForegroundColor DarkGray
 Write-Host ""
 
-# -- Toasts --
+# -- Dark theme screenshots --
 
-Write-Host "   Toasts:" -ForegroundColor DarkGray
+Write-Host "   Switching to dark theme..." -ForegroundColor DarkGray
+Set-WindowsTheme -Dark $true
+
+Write-Host "   Toasts (dark):" -ForegroundColor DarkGray
 
 Capture-Notification -FileName 'toast-info-dark' -Notification (
     New-BillboardNotification -Type Info `
@@ -88,25 +133,11 @@ Capture-Notification -FileName 'toast-info-dark' -Notification (
         -Branding $branding -Theme Dark -Timeout 10
 )
 
-Capture-Notification -FileName 'toast-warn-light' -Notification (
-    New-BillboardNotification -Type Warn `
-        -Title 'Storage Running Low' `
-        -Message "Your system drive **C:\** has **4.2 GB** of free space remaining. When free space drops below 2 GB, system performance may degrade." `
-        -Branding $branding -Theme Light -Timeout 10
-)
-
 Capture-Notification -FileName 'toast-alert-dark' -Notification (
     New-BillboardNotification -Type Alert `
         -Title 'Password Expiring Soon' `
         -Message 'Your Active Directory password will expire in **3 days** (April 11, 2026).' `
         -Branding $branding -Theme Dark -Timeout 10
-)
-
-Capture-Notification -FileName 'toast-critical-light' -Notification (
-    New-BillboardNotification -Type Critical `
-        -Title 'Endpoint Protection Disabled' `
-        -Message '**Microsoft Defender** real-time protection has been disabled on this device.' `
-        -Branding $branding -Theme Light -Timeout 10
 )
 
 Capture-Notification -FileName 'toast-question-dark' -Notification (
@@ -120,29 +151,13 @@ Capture-Notification -FileName 'toast-question-dark' -Notification (
         )
 )
 
-# -- Modals --
-
-Write-Host "   Modals:" -ForegroundColor DarkGray
-
-Capture-Notification -FileName 'modal-info-light' -Notification (
-    New-BillboardNotification -Type Info `
-        -Title 'Microsoft Teams Updated' `
-        -Message 'Microsoft Teams has been updated to version **1.7.00.26264**. No action is required -- the update has already been applied.' `
-        -Branding $branding -Theme Light -Timeout 10 -Modal
-)
+Write-Host "   Modals (dark):" -ForegroundColor DarkGray
 
 Capture-Notification -FileName 'modal-warn-dark' -Notification (
     New-BillboardNotification -Type Warn `
         -Title 'Storage Running Low' `
         -Message "Your system drive **C:\** has **4.2 GB** of free space remaining. When free space drops below 2 GB, system performance may degrade and Windows updates will stop installing.`n`n- Clear temporary files via *Disk Cleanup*`n- Move large files to **OneDrive** or a network share`n- Contact the helpdesk if you need assistance" `
         -Branding $branding -Theme Dark -Timeout 10 -Modal
-)
-
-Capture-Notification -FileName 'modal-alert-light' -Notification (
-    New-BillboardNotification -Type Alert `
-        -Title 'Password Expiring Soon' `
-        -Message 'Your Active Directory password will expire in **3 days** (April 11, 2026). Please change your password before it expires to avoid being locked out.' `
-        -Branding $branding -Theme Light -Timeout 10 -Modal
 )
 
 Capture-Notification -FileName 'modal-critical-dark' -Notification (
@@ -163,6 +178,44 @@ Capture-Notification -FileName 'modal-question-dark' -Notification (
         )
 )
 
+# -- Switch to light theme --
+
+Write-Host ""
+Write-Host "   Switching to light theme..." -ForegroundColor DarkGray
+Set-WindowsTheme -Dark $false
+
+Write-Host "   Toasts (light):" -ForegroundColor DarkGray
+
+Capture-Notification -FileName 'toast-warn-light' -Notification (
+    New-BillboardNotification -Type Warn `
+        -Title 'Storage Running Low' `
+        -Message "Your system drive **C:\** has **4.2 GB** of free space remaining. When free space drops below 2 GB, system performance may degrade." `
+        -Branding $branding -Theme Light -Timeout 10
+)
+
+Capture-Notification -FileName 'toast-critical-light' -Notification (
+    New-BillboardNotification -Type Critical `
+        -Title 'Endpoint Protection Disabled' `
+        -Message '**Microsoft Defender** real-time protection has been disabled on this device.' `
+        -Branding $branding -Theme Light -Timeout 10
+)
+
+Write-Host "   Modals (light):" -ForegroundColor DarkGray
+
+Capture-Notification -FileName 'modal-info-light' -Notification (
+    New-BillboardNotification -Type Info `
+        -Title 'Microsoft Teams Updated' `
+        -Message 'Microsoft Teams has been updated to version **1.7.00.26264**. No action is required -- the update has already been applied.' `
+        -Branding $branding -Theme Light -Timeout 10 -Modal
+)
+
+Capture-Notification -FileName 'modal-alert-light' -Notification (
+    New-BillboardNotification -Type Alert `
+        -Title 'Password Expiring Soon' `
+        -Message 'Your Active Directory password will expire in **3 days** (April 11, 2026). Please change your password before it expires to avoid being locked out.' `
+        -Branding $branding -Theme Light -Timeout 10 -Modal
+)
+
 Capture-Notification -FileName 'modal-question-light' -Notification (
     New-BillboardNotification -Type Question `
         -Title 'Chrome Update Available' `
@@ -174,7 +227,15 @@ Capture-Notification -FileName 'modal-question-light' -Notification (
         )
 )
 
-# Cleanup
+# Cleanup -- restore original theme and wallpaper
+Set-ItemProperty $themeKey -Name 'AppsUseLightTheme' -Value $origApps
+Set-ItemProperty $themeKey -Name 'SystemUsesLightTheme' -Value $origSystem
+Set-ItemProperty $colorsKey -Name 'Background' -Value $origBgColor
+if ($origWallpaper) {
+    [Wallpaper]::SystemParametersInfo([Wallpaper]::SPI_SETDESKWALLPAPER, 0, $origWallpaper, [Wallpaper]::SPIF_UPDATEINIFILE -bor [Wallpaper]::SPIF_SENDCHANGE) | Out-Null
+} else {
+    [Wallpaper]::SystemParametersInfo([Wallpaper]::SPI_SETDESKWALLPAPER, 0, '', [Wallpaper]::SPIF_UPDATEINIFILE -bor [Wallpaper]::SPIF_SENDCHANGE) | Out-Null
+}
 $rs.Close()
 $shell.UndoMinimizeAll()
 
