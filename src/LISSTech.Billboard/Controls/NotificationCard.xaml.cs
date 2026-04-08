@@ -105,7 +105,7 @@ public partial class NotificationCard : UserControl
         ApplyMspLogo(config.Branding?.Logo);
 
         // Context footer
-        ContextFooter.Text = GetDefaultBrand(config.Type, config.Branding?.Name);
+        ContextFooter.Text = GetDefaultBrand(config.Type, config.Branding?.Name, IsModal);
         ContextFooter.Foreground = FindBrush($"Text.Body.{theme}");
         ContextFooter.Visibility = Visibility.Visible;
 
@@ -275,10 +275,23 @@ public partial class NotificationCard : UserControl
         }
     }
 
-    private static string GetDefaultBrand(NotificationType type, string? brand)
+    private static string GetDefaultBrand(NotificationType type, string? brand, bool isModal)
     {
         var org = brand ?? "your organization";
         var helpdesk = brand != null ? $"{brand} support" : "your IT helpdesk";
+
+        if (!isModal)
+        {
+            return type switch
+            {
+                NotificationType.Info     => $"Sent by {org}. Contact {helpdesk} with questions.",
+                NotificationType.Warn     => $"Sent by {org}. Contact {helpdesk} if you need help.",
+                NotificationType.Alert    => $"Sent by {org}. Contact {helpdesk} if you need assistance.",
+                NotificationType.Critical => $"Sent by {org}. Contact {helpdesk} immediately if you need help.",
+                NotificationType.Question => $"Sent by {org}. Contact {helpdesk} if you're unsure how to respond.",
+                _                         => $"Sent by {org}. Contact {helpdesk} with questions."
+            };
+        }
 
         return type switch
         {
