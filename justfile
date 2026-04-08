@@ -2,9 +2,9 @@ set shell := ["pwsh", "-NoProfile", "-Command"]
 set dotenv-load
 
 # Paths
-release_dir := justfile_directory() / "Release/LISSTech.Billboard"
+release_dir  := justfile_directory() / "Release/LISSTech.Billboard"
 assembly_dir := release_dir / "Assembly"
-bin_dir := release_dir / "Bin"
+bin_dir      := release_dir / "Bin"
 
 # Code signing (set CODE_SIGNING_CERTIFICATE_THUMBPRINT in .env or environment)
 signing_thumbprint := env("CODE_SIGNING_CERTIFICATE_THUMBPRINT", "")
@@ -79,13 +79,15 @@ assemble:
 
     Write-Host "`n📦 Assembling module (Release)" -ForegroundColor Cyan
 
+    # DLL + deps → Assembly/
     & dotnet publish 'src/LISSTech.Billboard/LISSTech.Billboard.csproj' -c Release -o $assemblyDir -nologo -v:q
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    Get-ChildItem $assemblyDir -Filter '*.pdb' | Remove-Item -Force
 
+    # Exe → Bin/ (strip DLL deps — exe resolves them from Assembly/ via AssemblyResolve)
     & dotnet publish 'src/LISSTech.Billboard.Host/LISSTech.Billboard.Host.csproj' -c Release -o $binDir -nologo -v:q
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-    Get-ChildItem $binDir -Filter '*.pdb' | Remove-Item -Force
+    Get-ChildItem $binDir -Exclude 'Billboard.exe', 'Billboard.exe.config' | Remove-Item -Force
 
     $serviceUI = '{{ justfile_directory() }}/vendor/ServiceUI.exe'
     if (Test-Path $serviceUI) {

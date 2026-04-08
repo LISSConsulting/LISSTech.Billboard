@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Reflection;
 using LISSTech.Billboard;
 using LISSTech.Billboard.Models;
 using LISSTech.Billboard.Services;
@@ -7,6 +9,24 @@ namespace LISSTech.Billboard.Host;
 
 static class Program
 {
+    // Resolve DLL dependencies from ../Assembly/ relative to the exe.
+    // Uses Assembly.Load(byte[]) to stay in the default load context so
+    // WPF pack:// URIs can find embedded resources.
+    static Program()
+    {
+        var exeDir = AppDomain.CurrentDomain.BaseDirectory;
+        var assemblyDir = Path.GetFullPath(Path.Combine(exeDir, "..", "Assembly"));
+        if (!Directory.Exists(assemblyDir)) return;
+
+        AppDomain.CurrentDomain.AssemblyResolve += (_, e) =>
+        {
+            var name = new AssemblyName(e.Name).Name;
+            var path = Path.Combine(assemblyDir, name + ".dll");
+            if (!File.Exists(path)) return null;
+            return Assembly.Load(File.ReadAllBytes(path));
+        };
+    }
+
     [STAThread]
     static int Main(string[] args)
     {

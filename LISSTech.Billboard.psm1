@@ -1,11 +1,6 @@
-$script:AssemblyDir = Join-Path $PSScriptRoot 'Assembly'
 $script:BinDir = Join-Path $PSScriptRoot 'Bin'
-$script:BillboardDll = Join-Path $script:AssemblyDir 'LISSTech.Billboard.dll'
 $script:BillboardExe = Join-Path $script:BinDir 'Billboard.exe'
 $script:ServiceUIExe = Join-Path $script:BinDir 'ServiceUI.exe'
-
-# Load the DLL assembly
-Add-Type -Path $script:BillboardDll
 
 # ── Builder Cmdlets ──────────────────────────────────────────────────────────
 
