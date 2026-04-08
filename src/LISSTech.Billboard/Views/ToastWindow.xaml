@@ -6,6 +6,7 @@
         AllowsTransparency="True"
         Background="Transparent"
         ShowInTaskbar="False"
+        ShowActivated="False"
         Topmost="True"
         Width="420"
         MaxHeight="800"
