@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     Captures screenshots of all Billboard notification variants for docs/marketing.
@@ -71,7 +71,7 @@ function Capture-Notification {
     $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
     $bmp.Dispose()
 
-    Write-Host "   ✅ $FileName.png" -ForegroundColor Green
+    Write-Host "   OK $FileName.png" -ForegroundColor Green
 
     # Wait for notification to dismiss
     $null = $handle.AsyncWaitHandle.WaitOne(15000)
@@ -80,7 +80,7 @@ function Capture-Notification {
     $rs.Close()
 }
 
-Write-Host "`n📸 Capturing Billboard screenshots" -ForegroundColor Cyan
+Write-Host "`nCapturing Billboard screenshots" -ForegroundColor Cyan
 Write-Host "   Output: $OutputDir" -ForegroundColor DarkGray
 Write-Host ""
 
@@ -185,6 +185,6 @@ Capture-Notification -FileName 'modal-question-light' -Notification (
 $shell.UndoMinimizeAll()
 
 Write-Host ""
-Write-Host "   📁 Screenshots saved to: $OutputDir" -ForegroundColor Green
+Write-Host "   Screenshots saved to: $OutputDir" -ForegroundColor Green
 Write-Host "   Run on a clean 1920x1080 VM for best results." -ForegroundColor DarkGray
 Write-Host ""
