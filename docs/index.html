@@ -270,17 +270,12 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--amber);
+  color: rgba(255,255,255,0.85);
   margin-bottom: 2rem;
 }
 
-.hero__badge::before {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background: var(--amber);
-  border-radius: 50%;
+.hero__badge img {
+  flex-shrink: 0;
 }
 
 .hero h1 {
@@ -722,7 +717,10 @@ body::after {
 
 <section class="hero">
   <div class="container hero__inner">
-    <div class="hero__badge">LISS Technologies</div>
+    <div class="hero__badge">
+      <img src="https://raw.githubusercontent.com/LISSConsulting/LISSTech.Billboard/trunk/src/LISSTech.Billboard/Assets/Brand/liss-logo.png" alt="LISS Technologies" width="20" height="20" style="border-radius:3px;">
+      LISS Technologies
+    </div>
     <h1>
       Endpoint<br>notifications<br>
       <span>that don't suck.</span>
