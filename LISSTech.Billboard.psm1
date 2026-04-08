@@ -157,8 +157,6 @@ function Request-Billboard {
         [switch]$AsUser
     )
 
-    # Force modal for Request
-    $Notification.GetType().GetProperty('Modal').SetValue($Notification, $true)
 
     if ($AsUser -and (Test-IsSystem)) {
         $pipeName = New-BillboardPipeName
