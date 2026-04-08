@@ -4,7 +4,7 @@
     Captures screenshots of all Billboard notification variants for docs/marketing.
 .DESCRIPTION
     Run on a clean VM with 1920x1080 resolution for best results.
-    Requires the module to be published first (just publish).
+    The module must be imported or available in PSModulePath.
 .EXAMPLE
     Import-Module LISSTech.Billboard
     powershell -STA -File Capture-Screenshots.ps1
@@ -17,7 +17,6 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-# Use already-imported module or auto-discover from PSModulePath
 if (-not (Get-Module LISSTech.Billboard)) {
     Import-Module LISSTech.Billboard -ErrorAction Stop
 }
@@ -30,6 +29,13 @@ $shell = New-Object -ComObject Shell.Application
 $shell.MinimizeAll()
 Start-Sleep -Seconds 2
 
+# Create one persistent STA runspace for all notifications.
+# WPF Application is a singleton -- reusing one runspace avoids lifecycle issues.
+$rs = [runspacefactory]::CreateRunspace()
+$rs.ApartmentState = 'STA'
+$rs.ThreadOptions = 'ReuseThread'
+$rs.Open()
+
 function Capture-Notification {
     param(
         [LISSTech.Billboard.Models.BillboardConfig]$Notification,
@@ -37,18 +43,12 @@ function Capture-Notification {
         [int]$DelayMs = 2200
     )
 
-    # Show in a background STA runspace
-    $rs = [runspacefactory]::CreateRunspace()
-    $rs.ApartmentState = 'STA'
-    $rs.ThreadOptions = 'ReuseThread'
-    $rs.Open()
-
     $ps = [powershell]::Create()
     $ps.Runspace = $rs
     [void]$ps.AddScript({
         param($n)
         Add-Type -AssemblyName PresentationFramework
-        [LISSTech.Billboard.BillboardService]::Show($n)
+        $null = [LISSTech.Billboard.BillboardService]::Show($n)
     }).AddArgument($Notification)
 
     $handle = $ps.BeginInvoke()
@@ -71,21 +71,20 @@ function Capture-Notification {
     $null = $handle.AsyncWaitHandle.WaitOne(15000)
     try { $ps.EndInvoke($handle) } catch {}
     $ps.Dispose()
-    $rs.Close()
 }
 
 Write-Host "`nCapturing Billboard screenshots" -ForegroundColor Cyan
 Write-Host "   Output: $OutputDir" -ForegroundColor DarkGray
 Write-Host ""
 
-# ── Toasts ──────────────────────────────────────────────────────────────────
+# -- Toasts --
 
 Write-Host "   Toasts:" -ForegroundColor DarkGray
 
 Capture-Notification -FileName 'toast-info-dark' -Notification (
     New-BillboardNotification -Type Info `
         -Title 'Microsoft Teams Updated' `
-        -Message 'Microsoft Teams has been updated to version **1.7.00.26264**. No action is required — the update has already been applied. New features include improved meeting controls and faster file sharing.' `
+        -Message 'Microsoft Teams has been updated to version **1.7.00.26264**. No action is required -- the update has already been applied. New features include improved meeting controls and faster file sharing.' `
         -Branding $branding -Theme Dark -Timeout 10
 )
 
@@ -121,14 +120,14 @@ Capture-Notification -FileName 'toast-question-dark' -Notification (
         )
 )
 
-# ── Modals ──────────────────────────────────────────────────────────────────
+# -- Modals --
 
 Write-Host "   Modals:" -ForegroundColor DarkGray
 
 Capture-Notification -FileName 'modal-info-light' -Notification (
     New-BillboardNotification -Type Info `
         -Title 'Microsoft Teams Updated' `
-        -Message 'Microsoft Teams has been updated to version **1.7.00.26264**. No action is required — the update has already been applied.' `
+        -Message 'Microsoft Teams has been updated to version **1.7.00.26264**. No action is required -- the update has already been applied.' `
         -Branding $branding -Theme Light -Timeout 10 -Modal
 )
 
@@ -175,10 +174,10 @@ Capture-Notification -FileName 'modal-question-light' -Notification (
         )
 )
 
-# Restore windows
+# Cleanup
+$rs.Close()
 $shell.UndoMinimizeAll()
 
 Write-Host ""
 Write-Host "   Screenshots saved to: $OutputDir" -ForegroundColor Green
-Write-Host "   Run on a clean 1920x1080 VM for best results." -ForegroundColor DarkGray
 Write-Host ""
