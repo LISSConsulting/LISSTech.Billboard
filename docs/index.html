@@ -3,13 +3,58 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Billboard — Rich WPF Notifications for Windows Endpoints | LISS Technologies</title>
-<meta name="description" content="Beautiful toast and modal notifications for Windows endpoints. Five severity types, dark and light themes, PowerShell scriptable. Built for RMM, MDM, and MSP automation.">
-<meta name="keywords" content="Windows notifications, WPF, PowerShell, toast, modal, endpoint management, RMM, MDM, MSP, LISS Technologies, Billboard">
-<meta property="og:title" content="Billboard — Rich WPF Notifications for Windows Endpoints">
-<meta property="og:description" content="Beautiful toast and modal notifications for Windows. Five severity types, dark and light themes, PowerShell scriptable.">
+<title>Billboard by LISS Technologies — WPF Toast & Modal Notifications for Windows Endpoints</title>
+<meta name="description" content="Billboard is an open-source WPF notification system by LISS Technologies for Windows endpoint management. Beautiful toast and modal dialogs with five severity types, dark and light themes, branded illustrations, and a PowerShell API. Built for MSPs, RMM tools like N-central and Intune, and MDM automation scripts. EV code-signed. Install-Module LISSTech.Billboard.">
+<meta name="keywords" content="Windows notification system, WPF notifications, PowerShell notification module, endpoint notification, toast notification Windows, modal dialog PowerShell, RMM notification, MDM endpoint alerts, MSP tools, N-central automation, Intune remediation, ServiceUI notification, SYSTEM context notification, LISS Technologies, LISS Consulting, LISSTech Billboard, dark mode notification, branded endpoint notification, EV code signed PowerShell module">
+<meta name="author" content="LISS Technologies — LISS Consulting, Corp.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://lissconsulting.github.io/LISSTech.Billboard/">
+
+<!-- Open Graph -->
+<meta property="og:title" content="Billboard by LISS Technologies — WPF Notifications for Windows Endpoints">
+<meta property="og:description" content="Rich toast and modal notifications for Windows. Five severity types, dark and light themes, PowerShell scriptable. Open-source, EV code-signed, built for RMM/MDM/MSP.">
 <meta property="og:image" content="https://raw.githubusercontent.com/LISSConsulting/LISSTech.Billboard/trunk/docs/screenshots/modal-question-dark.png">
+<meta property="og:image:width" content="1920">
+<meta property="og:image:height" content="1080">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://lissconsulting.github.io/LISSTech.Billboard/">
+<meta property="og:site_name" content="LISS Technologies">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Billboard — WPF Notifications for Windows Endpoints">
+<meta name="twitter:description" content="Rich toast and modal notifications for Windows. PowerShell scriptable. Built for RMM, MDM, and MSP automation by LISS Technologies.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/LISSConsulting/LISSTech.Billboard/trunk/docs/screenshots/modal-question-dark.png">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "LISSTech Billboard",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Windows",
+  "description": "Rich WPF toast and modal notification system for Windows endpoints. Five severity types, dark and light themes, PowerShell scriptable. Built for RMM, MDM, and MSP automation.",
+  "url": "https://lissconsulting.github.io/LISSTech.Billboard/",
+  "downloadUrl": "https://www.powershellgallery.com/packages/LISSTech.Billboard",
+  "softwareVersion": "26.98",
+  "license": "https://github.com/LISSConsulting/LISSTech.Billboard/blob/trunk/LICENSE",
+  "programmingLanguage": ["C#", "PowerShell", "XAML"],
+  "author": {
+    "@type": "Organization",
+    "name": "LISS Consulting, Corp.",
+    "alternateName": "LISS Technologies",
+    "url": "https://lisstech.com"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "image": "https://raw.githubusercontent.com/LISSConsulting/LISSTech.Billboard/trunk/docs/screenshots/modal-question-dark.png"
+}
+</script>
+
 <link rel="icon" href="assets/brand/billboard-icon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -655,9 +700,10 @@ body::after {
      TOPBAR
      ═══════════════════════════════════════════════════════════════════════════ -->
 
-<nav class="topbar">
-  <a href="#" class="topbar__brand">
-    <img src="assets/brand/billboard-icon.png" alt="LISS">
+<header>
+<nav class="topbar" aria-label="Main navigation">
+  <a href="#" class="topbar__brand" aria-label="Billboard by LISS Technologies — Home">
+    <img src="assets/brand/billboard-icon.png" alt="Billboard notification system by LISS Technologies" width="32" height="32">
     Billboard
   </a>
   <div class="topbar__links">
@@ -668,6 +714,7 @@ body::after {
     <a href="https://www.powershellgallery.com/packages/LISSTech.Billboard" class="btn btn--primary" style="padding:0.5rem 1rem;font-size:0.7rem;box-shadow:3px 3px 0 var(--black);">Install</a>
   </div>
 </nav>
+</header>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
      HERO
@@ -707,49 +754,49 @@ body::after {
   </div>
   <div class="showcase__grid">
     <figure class="showcase__card showcase__hero-img">
-      <img src="screenshots/modal-question-dark.png" alt="Question modal — dark theme" loading="lazy">
+      <img src="screenshots/modal-question-dark.png" alt="Billboard question modal notification on Windows 11 dark desktop — restart required with Restart Now and Remind in 4 Hours buttons, LISS Consulting branding" loading="lazy">
       <figcaption>
         <strong>Question Modal</strong>
         <span class="tag tag--blue">Dark</span>
       </figcaption>
     </figure>
     <figure class="showcase__card">
-      <img src="screenshots/toast-info-dark.png" alt="Info toast — dark theme" loading="lazy">
+      <img src="screenshots/toast-info-dark.png" alt="Billboard info toast notification on Windows 11 dark desktop — Microsoft Teams Updated" loading="lazy">
       <figcaption>
         <strong>Info Toast</strong>
         <span class="tag tag--ink">Dark</span>
       </figcaption>
     </figure>
     <figure class="showcase__card">
-      <img src="screenshots/toast-critical-light.png" alt="Critical toast — light theme" loading="lazy">
+      <img src="screenshots/toast-critical-light.png" alt="Billboard critical toast notification on Windows 11 light desktop — Endpoint Protection Disabled" loading="lazy">
       <figcaption>
         <strong>Critical Toast</strong>
         <span class="tag tag--red">Light</span>
       </figcaption>
     </figure>
     <figure class="showcase__card">
-      <img src="screenshots/modal-warn-dark.png" alt="Warning modal — dark theme" loading="lazy">
+      <img src="screenshots/modal-warn-dark.png" alt="Billboard warning modal notification on Windows 11 dark desktop — Storage Running Low with bullet list" loading="lazy">
       <figcaption>
         <strong>Warning Modal</strong>
         <span class="tag tag--amber">Dark</span>
       </figcaption>
     </figure>
     <figure class="showcase__card">
-      <img src="screenshots/modal-alert-light.png" alt="Alert modal — light theme" loading="lazy">
+      <img src="screenshots/modal-alert-light.png" alt="Billboard alert modal notification on Windows 11 light desktop — Password Expiring Soon" loading="lazy">
       <figcaption>
         <strong>Alert Modal</strong>
         <span class="tag tag--orange">Light</span>
       </figcaption>
     </figure>
     <figure class="showcase__card">
-      <img src="screenshots/modal-critical-dark.png" alt="Critical modal — dark theme" loading="lazy">
+      <img src="screenshots/modal-critical-dark.png" alt="Billboard critical modal notification on Windows 11 dark desktop — Endpoint Protection Disabled with plane crash illustration" loading="lazy">
       <figcaption>
         <strong>Critical Modal</strong>
         <span class="tag tag--red">Dark</span>
       </figcaption>
     </figure>
     <figure class="showcase__card">
-      <img src="screenshots/modal-question-light.png" alt="Question modal — light theme" loading="lazy">
+      <img src="screenshots/modal-question-light.png" alt="Billboard question modal notification on Windows 11 light desktop — Chrome Update Available with Update Now and Remind Tomorrow buttons" loading="lazy">
       <figcaption>
         <strong>Question Modal</strong>
         <span class="tag tag--blue">Light</span>
@@ -906,10 +953,10 @@ body::after {
      FOOTER
      ═══════════════════════════════════════════════════════════════════════════ -->
 
-<footer class="footer">
+<footer class="footer" role="contentinfo">
   <div class="footer__brand">
-    <img src="https://raw.githubusercontent.com/LISSConsulting/LISSTech.Billboard/trunk/src/LISSTech.Billboard/Assets/Brand/liss-logo.png" alt="LISS">
-    LISS Consulting, Corp.
+    <img src="https://raw.githubusercontent.com/LISSConsulting/LISSTech.Billboard/trunk/src/LISSTech.Billboard/Assets/Brand/liss-logo.png" alt="LISS Consulting logo" width="24" height="24">
+    <span>LISS Consulting, Corp.</span>
   </div>
   <div class="footer__links">
     <a href="https://github.com/LISSConsulting/LISSTech.Billboard">GitHub</a>
@@ -919,6 +966,16 @@ body::after {
     <a href="https://www.flaticon.com/free-icons/billboard" title="billboard icons">Icon by Freepik</a>
   </div>
 </footer>
+
+<!-- SEO: keyword-rich summary for search engines, visually hidden -->
+<aside aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">
+  <h2>About LISSTech Billboard</h2>
+  <p>LISSTech Billboard is a free, open-source WPF notification system built by LISS Technologies (LISS Consulting, Corp.) for Windows endpoint management. It provides rich toast and modal notification dialogs that IT administrators can deploy via PowerShell scripts, Intune remediations, N-central automation policies, ConnectWise Automate scripts, Datto RMM components, and other RMM/MDM platforms.</p>
+  <p>Billboard supports five notification severity types: Info for software updates and policy changes, Warning for low disk space and certificate expiry, Alert for password expiration and compliance deadlines, Critical for security incidents and disabled endpoint protection, and Question for restart prompts and user decisions requiring button responses with optional deferral scheduling.</p>
+  <p>Key features include dark and light theme support with automatic Windows theme detection, custom organization branding with logo and name, markdown-formatted message bodies with bold, italic, bullets, and links, button deferral with configurable durations (30 minutes to 7 days), named pipe IPC for result communication from SYSTEM context, ServiceUI integration for displaying notifications in the logged-on user's desktop session, and EV code signing from LISS Consulting's DigiCert certificate.</p>
+  <p>Install from PowerShell Gallery: Install-Module LISSTech.Billboard. The module targets .NET Framework 4.7.2 (pre-installed on Windows 10 and Windows 11) and PowerShell 5.1. No additional runtime dependencies required. Source code available on GitHub under the Apache 2.0 license at github.com/LISSConsulting/LISSTech.Billboard.</p>
+  <p>Billboard is part of the LISSTech product family by LISS Consulting, which includes DrainCtl for Remote Desktop Services drain mode monitoring, and other endpoint management tools for MSPs and IT teams.</p>
+</aside>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
      SCRIPTS
