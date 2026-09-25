@@ -229,8 +229,13 @@ function Request-Billboard {
             throw "ServiceUI exited before Billboard connected (exit code $($process.ExitCode)). Ensure a user is logged on and can read the module directory."
         }
 
+        $pipeTimeoutSeconds = if ($Notification.EffectiveTimeout -gt 0) {
+            $Notification.EffectiveTimeout + 30
+        } else {
+            0
+        }
         try {
-            return Read-BillboardPipe -PipeName $pipeName -TimeoutSeconds 300
+            return Read-BillboardPipe -PipeName $pipeName -TimeoutSeconds $pipeTimeoutSeconds
         } catch {
             if (-not $process.HasExited -and -not $process.WaitForExit(15000)) {
                 $process.Kill()
@@ -412,6 +417,7 @@ function Read-BillboardPipe {
     [OutputType([LISSTech.Billboard.Models.BillboardResult])]
     param(
         [Parameter(Mandatory)][string]$PipeName,
+        [ValidateRange(0, [int]::MaxValue)]
         [int]$TimeoutSeconds = 300
     )
 
@@ -419,7 +425,11 @@ function Read-BillboardPipe {
     $reader = $null
     try {
         $pipe = [System.IO.Pipes.NamedPipeClientStream]::new('.', $PipeName, [System.IO.Pipes.PipeDirection]::In)
-        $pipe.Connect($TimeoutSeconds * 1000)
+        if ($TimeoutSeconds -eq 0) {
+            $pipe.Connect()
+        } else {
+            $pipe.Connect($TimeoutSeconds * 1000)
+        }
         $reader = [System.IO.StreamReader]::new($pipe, [System.Text.Encoding]::UTF8)
         $json = $reader.ReadToEnd()
         return $json | ConvertFrom-Json

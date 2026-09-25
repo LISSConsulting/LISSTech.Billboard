@@ -1,6 +1,6 @@
 @{
     RootModule        = 'LISSTech.Billboard.psm1'
-    ModuleVersion     = '26.267.1'
+    ModuleVersion     = '26.267.2'
     GUID              = 'f3a7c2e1-8b4d-4f6a-9c5e-1d2b3a4f5e6c'
     Author            = 'LISS Consulting, Corp.'
     CompanyName       = 'LISS Consulting, Corp.'
@@ -40,7 +40,7 @@
             Tags         = @('Windows', 'WPF', 'Notification', 'Toast', 'Modal', 'Endpoint', 'RMM', 'MDM', 'MSP', 'ServiceUI', 'Branding', 'DarkMode')
             LicenseUri   = 'https://github.com/LISSConsulting/LISSTech.Billboard/blob/trunk/LICENSE'
             ProjectUri   = 'https://github.com/LISSConsulting/LISSTech.Billboard'
-            ReleaseNotes = 'Fixes explicit -Timeout 0 handling through the SYSTEM-to-user ServiceUI transport so Info, Warn, and Alert notifications can remain visible until dismissed.'
+            ReleaseNotes = 'Fixes Request-Billboard -AsUser for notifications without automatic dismissal by waiting for the named-pipe response without the previous 300-second deadline. Timed notifications use their configured timeout plus launch grace.'
         }
     }
 }
