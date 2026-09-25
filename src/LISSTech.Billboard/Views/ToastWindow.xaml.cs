@@ -7,6 +7,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LISSTech.Billboard.Controls;
 using LISSTech.Billboard.Helpers;
+using LISSTech.Billboard.Services;
 using LISSTech.Billboard.Models;
 
 namespace LISSTech.Billboard.Views;
@@ -20,22 +21,23 @@ public partial class ToastWindow : Window
 
     public BillboardResult Result => _result ?? BillboardResult.FromDismiss();
 
-    public ToastWindow(BillboardConfig config, bool isDarkTheme = true)
+    public ToastWindow(BillboardConfig config, ThemeMode theme = ThemeMode.Dark)
     {
         InitializeComponent();
         _config = config;
 
-        // Set outer border background to match theme
-        CardBorder.Background = isDarkTheme
-            ? (FindResource("Card.Background.Dark") as Brush ?? new SolidColorBrush(Color.FromArgb(0xEB, 0x1C, 0x1C, 0x26)))
-            : (FindResource("Card.Background.Light") as Brush ?? new SolidColorBrush(Color.FromArgb(0xE0, 0xFF, 0xFF, 0xFF)));
+        var isDark = ThemeService.IsDark(theme);
+        CardBorder.Background = FindResource($"Card.Background.{theme}") as Brush ??
+            (isDark
+                ? new SolidColorBrush(Color.FromArgb(0xEB, 0x1C, 0x1C, 0x26))
+                : new SolidColorBrush(Color.FromArgb(0xE0, 0xFF, 0xFF, 0xFF)));
 
         Card.Config = config;
-        Card.IsDarkTheme = isDarkTheme;
+        Card.Theme = theme;
 
         Card.ButtonClicked += (_, e) =>
         {
-            _result = BillboardResult.FromButton(e.Button, e.Index);
+            _result = BillboardResult.FromButton(e.Button, e.Index, Card.InputText);
             AnimateOut();
         };
 

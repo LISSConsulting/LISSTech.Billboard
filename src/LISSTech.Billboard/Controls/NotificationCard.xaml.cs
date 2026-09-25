@@ -5,6 +5,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Animation;
 using LISSTech.Billboard.Models;
 using LISSTech.Billboard.Services;
 
@@ -20,9 +21,9 @@ public partial class NotificationCard : UserControl
         DependencyProperty.Register(nameof(IsModal), typeof(bool), typeof(NotificationCard),
             new PropertyMetadata(false));
 
-    public static readonly DependencyProperty IsDarkThemeProperty =
-        DependencyProperty.Register(nameof(IsDarkTheme), typeof(bool), typeof(NotificationCard),
-            new PropertyMetadata(true, OnThemeChanged));
+    public static readonly DependencyProperty ThemeProperty =
+        DependencyProperty.Register(nameof(Theme), typeof(ThemeMode), typeof(NotificationCard),
+            new PropertyMetadata(ThemeMode.Dark, OnThemeChanged));
 
     public BillboardConfig? Config
     {
@@ -36,11 +37,13 @@ public partial class NotificationCard : UserControl
         set => SetValue(IsModalProperty, value);
     }
 
-    public bool IsDarkTheme
+    public ThemeMode Theme
     {
-        get => (bool)GetValue(IsDarkThemeProperty);
-        set => SetValue(IsDarkThemeProperty, value);
+        get => (ThemeMode)GetValue(ThemeProperty);
+        set => SetValue(ThemeProperty, value);
     }
+
+    public string? InputText => Config?.Input == null ? null : InputBox.Text;
 
     public event EventHandler<ButtonClickedEventArgs>? ButtonClicked;
     public event EventHandler? CloseClicked;
@@ -64,20 +67,14 @@ public partial class NotificationCard : UserControl
 
     private void ApplyConfig(BillboardConfig config)
     {
-        var theme = IsDarkTheme ? "Dark" : "Light";
+        var theme = Theme.ToString();
+        var contrast = ThemeService.ContrastVariant(Theme);
         var type = config.Type.ToString();
 
-        // Apply type-based colors
-        ApplyTypeColors(type, theme);
-
-        // Set badge icon geometry
+        ApplyTypeColors(type, theme, contrast);
         SetBadgeIcon(config.Type);
+        BadgeIcon.Stroke = GetBadgeTextBrush(type, contrast);
 
-        // Set badge icon stroke to match badge text color
-        var badgeTextBrush = GetBadgeTextBrush(type, theme);
-        BadgeIcon.Stroke = badgeTextBrush;
-
-        // Set type label text
         TypeLabel.Text = config.Type switch
         {
             NotificationType.Info     => "INFORMATION",
@@ -88,65 +85,88 @@ public partial class NotificationCard : UserControl
             _                         => config.Type.ToString().ToUpperInvariant()
         };
 
-        // Set title
+        var contentDirection = TextDirectionService.GetFlowDirection(
+            config.Title + "\n" + config.Message);
         TitleBlock.Text = config.Title;
         TitleBlock.Foreground = FindBrush($"Text.Primary.{theme}");
-
-        // Update title style for modal (larger font)
         TitleBlock.Style = (Style?)TryFindResource(IsModal ? "ModalTitle" : "ToastTitle");
+        TitleBlock.FlowDirection = TextDirectionService.GetFlowDirection(config.Title);
+        TitleBlock.Language = TextDirectionService.GetLanguage(config.Title);
+        TitleBlock.TextAlignment = TitleBlock.FlowDirection == FlowDirection.RightToLeft
+            ? TextAlignment.Right
+            : TextAlignment.Left;
 
-        // Set message via markdown parser
         ApplyMessage(config.Message, theme);
-
-        // Set illustration placeholder
-        ApplyIllustration(config, theme);
-
-        // MSP logo
+        ApplyInput(config.Input, theme);
+        ApplyIllustration(config, theme, contrast);
         ApplyMspLogo(config.Branding?.Logo);
 
-        // Context footer
         ContextFooter.Text = GetDefaultBrand(config.Type, config.Branding?.Name, IsModal);
         ContextFooter.Foreground = FindBrush($"Text.Body.{theme}");
+        ContextFooter.FlowDirection = FlowDirection.LeftToRight;
+        ContextFooter.TextAlignment = TextAlignment.Left;
         ContextFooter.Visibility = Visibility.Visible;
 
-        // Generate buttons
+        ButtonPanel.FlowDirection = contentDirection;
         GenerateButtons(config, theme);
 
-        // Close button: theme-aware style and icon stroke
-        CloseButton.Style = (Style?)TryFindResource($"CloseButton.{theme}");
-        var closePath = CloseButton.Content as System.Windows.Shapes.Path;
-        if (closePath != null)
+        CloseButton.Style = (Style?)TryFindResource($"CloseButton.{contrast}");
+        if (CloseButton.Content is System.Windows.Shapes.Path closePath)
             closePath.Stroke = FindBrush($"Text.Body.{theme}");
 
-        // MSP logo opacity — subtler in light theme
-        MspLogoImage.Opacity = theme == "Dark" ? 0.5 : 0.35;
+        MspLogoImage.Opacity = ThemeService.IsDark(Theme) ? 0.5 : 0.35;
 
-        // Show brand footer for modals without illustration panel (panel has its own footer)
         var showContentFooter = IsModal && IllustrationPanel.Visibility != Visibility.Visible;
         BrandFooter.Visibility = showContentFooter ? Visibility.Visible : Visibility.Collapsed;
         BrandFooter.Foreground = FindBrush($"Text.BrandWatermark.{theme}");
     }
 
-    private void ApplyTypeColors(string type, string theme)
+    private void ApplyTypeColors(string type, string theme, string contrast)
     {
-        // Badge background
-        Badge.Background = GetBadgeBrush(type, theme);
+        Badge.Background = GetBadgeBrush(type, contrast);
 
-        // Header background
-        var headerBrush = TryFindResource($"{type}.HeaderBg.{theme}") as SolidColorBrush;
-        HeaderBorder.Background = headerBrush ?? Brushes.Transparent;
+        if (ThemeService.IsArtistic(Theme))
+        {
+            HeaderBorder.Background = TryFindResource($"Theme.HeaderBg.{theme}") as Brush ??
+                Brushes.Transparent;
+            CardBorder.BorderBrush = TryFindResource($"Theme.Border.{theme}") as Brush ??
+                Brushes.Transparent;
+            TypeLabel.Foreground = FindBrush($"Theme.Accent.{theme}");
+            ApplyAnimatedBackground(theme);
+            return;
+        }
 
-        // Card border
-        var borderBrush = TryFindResource($"{type}.Border.{theme}") as SolidColorBrush;
-        CardBorder.BorderBrush = borderBrush ?? Brushes.Transparent;
+        HeaderBorder.Background = TryFindResource($"{type}.HeaderBg.{theme}") as Brush ??
+            Brushes.Transparent;
+        CardBorder.BorderBrush = TryFindResource($"{type}.Border.{theme}") as Brush ??
+            Brushes.Transparent;
+        TypeLabel.Foreground = TryFindResource($"{type}.Label.{theme}") as Brush ??
+            Brushes.White;
+        CardBorder.Background = TryFindResource($"{type}.CardBg.{theme}") as Brush ??
+            TryFindResource($"Card.Background.{theme}") as Brush ??
+            Brushes.Transparent;
+    }
 
-        // Type label foreground
-        var labelBrush = TryFindResource($"{type}.Label.{theme}") as SolidColorBrush;
-        TypeLabel.Foreground = labelBrush ?? Brushes.White;
+    private void ApplyAnimatedBackground(string theme)
+    {
+        if (TryFindResource($"Card.Background.{theme}") is not LinearGradientBrush source)
+        {
+            CardBorder.Background = TryFindResource($"Card.Background.{theme}") as Brush;
+            return;
+        }
 
-        // Card background: type-tinted for all types, fallback to generic
-        var cardBg = TryFindResource($"{type}.CardBg.{theme}") as SolidColorBrush;
-        CardBorder.Background = cardBg ?? FindBrush($"Card.Background.{theme}");
+        var brush = source.Clone();
+        var transform = new RotateTransform(0, 0.5, 0.5);
+        brush.RelativeTransform = transform;
+        transform.BeginAnimation(
+            RotateTransform.AngleProperty,
+            new DoubleAnimation(-8, 8, TimeSpan.FromSeconds(12))
+            {
+                AutoReverse = true,
+                RepeatBehavior = RepeatBehavior.Forever,
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+            });
+        CardBorder.Background = brush;
     }
 
     // Badge backgrounds: Info has no theme suffix; all others do.
@@ -183,23 +203,50 @@ public partial class NotificationCard : UserControl
             BadgeIcon.Data = geo;
     }
 
-    private void ApplyIllustration(BillboardConfig config, string theme)
+    private void ApplyIllustration(BillboardConfig config, string theme, string contrast)
     {
-        var name = config.Illustration ?? GetDefaultIllustration(config.Type);
+        var source = config.Illustration ?? GetDefaultIllustration(config.Type);
 
-        if (name is null)
+        if (source is null)
         {
-            IllustrationPanel.Visibility = Visibility.Collapsed;
-            IllustrationImage.Visibility = Visibility.Collapsed;
+            HideIllustration();
+            return;
+        }
+        if (source.Equals("none", StringComparison.OrdinalIgnoreCase))
+        {
+            HideIllustration();
             return;
         }
 
         try
         {
-            // Try theme-specific illustration first (e.g., info-light.png), fall back to default
-            var themeSuffix = theme == "Light" ? "-light" : "";
+            var isRemote = Uri.TryCreate(source, UriKind.Absolute, out var remoteUri) &&
+                (remoteUri.Scheme == Uri.UriSchemeHttp || remoteUri.Scheme == Uri.UriSchemeHttps);
+            var isLocal = System.IO.Path.IsPathRooted(source) || System.IO.File.Exists(source);
+            if (isRemote || isLocal)
+            {
+                var image = ImageService.LoadImage(source, IsModal ? 720 : 360);
+                if (image != null)
+                    ShowIllustration(config, image, theme, contrast);
+                else
+                    HideIllustration();
+
+                if (isRemote)
+                {
+                    ImageService.DownloadAndCacheAsync(source, IsModal ? 720 : 360, loaded =>
+                    {
+                        if (ReferenceEquals(Config, config))
+                            ShowIllustration(config, loaded, theme, contrast);
+                    });
+                }
+                return;
+            }
+
+            var themeSuffix = contrast == "Light" ? "-light" : "";
             BitmapImage bitmap;
-            var themedUri = new Uri($"pack://application:,,,/LISSTech.Billboard;component/Assets/Illustrations/{name}{themeSuffix}.png", UriKind.Absolute);
+            var themedUri = new Uri(
+                $"pack://application:,,,/LISSTech.Billboard;component/Assets/Illustrations/{source}{themeSuffix}.png",
+                UriKind.Absolute);
             var streamInfo = Application.GetResourceStream(themedUri);
             if (streamInfo != null)
             {
@@ -208,45 +255,64 @@ public partial class NotificationCard : UserControl
             }
             else
             {
-                bitmap = new BitmapImage(new Uri($"pack://application:,,,/LISSTech.Billboard;component/Assets/Illustrations/{name}.png", UriKind.Absolute));
+                bitmap = new BitmapImage(new Uri(
+                    $"pack://application:,,,/LISSTech.Billboard;component/Assets/Illustrations/{source}.png",
+                    UriKind.Absolute));
             }
-
-            if (IsModal)
-            {
-                // Side panel for modals
-                IllustrationPanel.Visibility = Visibility.Visible;
-                IllustrationPanelImage.Source = bitmap;
-                IllustrationImage.Visibility = Visibility.Collapsed;
-                // Subtle header tint — slightly different shade from card body
-                HeaderBorder.Background = new SolidColorBrush(
-                    theme == "Dark" ? Color.FromArgb(0x18, 0xFF, 0xFF, 0xFF)
-                                    : Color.FromArgb(0x0A, 0x00, 0x00, 0x00));
-                // Brand footer goes under illustration, not in content area
-                BrandFooter.Visibility = Visibility.Collapsed;
-                PanelBrandText.Foreground = FindBrush($"Text.BrandWatermark.{theme}");
-                PanelBrandText.Text = config.Branding?.Name?.ToUpperInvariant() ?? "LISS TECHNOLOGIES";
-            }
-            else
-            {
-                // Subtle overlay for toasts
-                IllustrationPanel.Visibility = Visibility.Collapsed;
-                IllustrationImage.Source = bitmap;
-                IllustrationImage.Visibility = Visibility.Visible;
-                IllustrationImage.Width = 180;
-                IllustrationImage.Opacity = 0.10;
-            }
+            ShowIllustration(config, bitmap, theme, contrast);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Billboard: failed to load illustration: {ex.Message}");
-            IllustrationPanel.Visibility = Visibility.Collapsed;
-            IllustrationImage.Visibility = Visibility.Collapsed;
+            HideIllustration();
         }
+    }
+
+    private void ShowIllustration(
+        BillboardConfig config,
+        BitmapSource bitmap,
+        string theme,
+        string contrast)
+    {
+        if (IsModal)
+        {
+            IllustrationPanel.Visibility = Visibility.Visible;
+            IllustrationPanelImage.Source = bitmap;
+            IllustrationImage.Visibility = Visibility.Collapsed;
+            if (!ThemeService.IsArtistic(Theme))
+            {
+                HeaderBorder.Background = new SolidColorBrush(
+                    contrast == "Dark"
+                        ? Color.FromArgb(0x18, 0xFF, 0xFF, 0xFF)
+                        : Color.FromArgb(0x0A, 0x00, 0x00, 0x00));
+            }
+            BrandFooter.Visibility = Visibility.Collapsed;
+            PanelBrandText.Foreground = FindBrush($"Text.BrandWatermark.{theme}");
+            PanelBrandText.Text = config.Branding?.Name?.ToUpperInvariant() ?? "LISS TECHNOLOGIES";
+        }
+        else
+        {
+            IllustrationPanel.Visibility = Visibility.Collapsed;
+            IllustrationImage.Source = bitmap;
+            IllustrationImage.Visibility = Visibility.Visible;
+            IllustrationImage.Width = 180;
+            IllustrationImage.Opacity = 0.10;
+        }
+    }
+
+    private void HideIllustration()
+    {
+        IllustrationPanelImage.Source = null;
+        IllustrationImage.Source = null;
+        IllustrationPanel.Visibility = Visibility.Collapsed;
+        IllustrationImage.Visibility = Visibility.Collapsed;
     }
 
     private void ApplyMspLogo(string? logoPath)
     {
-        var fallback = new BitmapImage(new Uri("pack://application:,,,/LISSTech.Billboard;component/Assets/Brand/liss-logo.png", UriKind.Absolute));
+        var fallback = new BitmapImage(new Uri(
+            "pack://application:,,,/LISSTech.Billboard;component/Assets/Brand/liss-logo.png",
+            UriKind.Absolute));
 
         if (string.IsNullOrWhiteSpace(logoPath))
         {
@@ -254,25 +320,18 @@ public partial class NotificationCard : UserControl
             return;
         }
 
-        var syncResult = LogoService.LoadMspLogo(logoPath);
-        if (syncResult != null)
+        var image = ImageService.LoadImage(logoPath, 96);
+        if (image != null)
         {
-            MspLogoImage.Source = syncResult;
+            MspLogoImage.Source = image;
             return;
         }
 
-        // For remote URLs without a cache hit, show fallback immediately
-        // then download asynchronously and swap in when ready
         MspLogoImage.Source = fallback;
-
-        if (Uri.TryCreate(logoPath, UriKind.Absolute, out var uri) &&
-            (uri.Scheme == "http" || uri.Scheme == "https"))
-        {
-            LogoService.DownloadAndCacheAsync(uri, logoPath!, img =>
-            {
-                Dispatcher.BeginInvoke(new Action(() => MspLogoImage.Source = img));
-            });
-        }
+        ImageService.DownloadAndCacheAsync(
+            logoPath!,
+            96,
+            loaded => MspLogoImage.Source = loaded);
     }
 
     private static string GetDefaultBrand(NotificationType type, string? brand, bool isModal)
@@ -317,21 +376,83 @@ public partial class NotificationCard : UserControl
         };
     }
 
+    private void ApplyInput(InputDefinition? input, string theme)
+    {
+        if (input == null || !IsModal)
+        {
+            InputPanel.Visibility = Visibility.Collapsed;
+            InputBox.Text = "";
+            return;
+        }
+
+        InputPanel.Visibility = Visibility.Visible;
+        InputLabel.Text = input.Required ? $"{input.Label} *" : input.Label;
+        InputPlaceholder.Text = input.Placeholder ?? "";
+        InputBox.MaxLength = input.MaxLength;
+        InputBox.AcceptsReturn = input.Multiline;
+        InputBox.MinHeight = input.Multiline ? 96 : 44;
+        InputBox.MaxHeight = input.Multiline ? 180 : 44;
+        InputBox.VerticalContentAlignment = input.Multiline
+            ? VerticalAlignment.Top
+            : VerticalAlignment.Center;
+        InputBox.VerticalScrollBarVisibility = input.Multiline
+            ? ScrollBarVisibility.Auto
+            : ScrollBarVisibility.Hidden;
+        InputBox.Text = input.DefaultValue ?? "";
+
+        var direction = TextDirectionService.GetFlowDirection(
+            input.DefaultValue ?? input.Placeholder ?? input.Label);
+        var language = TextDirectionService.GetLanguage(
+            input.DefaultValue ?? input.Placeholder ?? input.Label);
+        InputLabel.FlowDirection = direction;
+        InputLabel.Language = language;
+        InputLabel.TextAlignment = direction == FlowDirection.RightToLeft
+            ? TextAlignment.Right
+            : TextAlignment.Left;
+        InputBox.FlowDirection = direction;
+        InputBox.Language = language;
+        InputBox.TextAlignment = direction == FlowDirection.RightToLeft
+            ? TextAlignment.Right
+            : TextAlignment.Left;
+        InputPlaceholder.FlowDirection = direction;
+        InputPlaceholder.Language = language;
+        InputPlaceholder.TextAlignment = InputBox.TextAlignment;
+
+        InputLabel.Foreground = FindBrush($"Text.Primary.{theme}");
+        InputBox.Foreground = FindBrush($"Text.Primary.{theme}");
+        InputBox.CaretBrush = FindBrush($"Text.Primary.{theme}");
+        InputPlaceholder.Foreground = FindBrush($"Text.Body.{theme}");
+        InputBox.Background = TryFindResource($"Input.Background.{theme}") as Brush ??
+            Brushes.Transparent;
+        InputBox.BorderBrush = TryFindResource($"Theme.Border.{theme}") as Brush ??
+            FindBrush($"Text.Body.{theme}");
+        InputValidation.Visibility = Visibility.Collapsed;
+        InputPlaceholder.Visibility = InputBox.Text.Length == 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
     private void ApplyMessage(string message, string theme)
     {
+        var direction = TextDirectionService.GetFlowDirection(message);
         var doc = new FlowDocument
         {
-            FontFamily  = new FontFamily("Cascadia Code, Aptos, Consolas, Segoe UI"),
-            FontSize    = 14,
-            LineHeight  = 22,
-            Foreground  = FindBrush($"Text.Body.{theme}"),
+            FontFamily = new FontFamily("Cascadia Code, Aptos, Consolas, Segoe UI"),
+            FontSize = 14,
+            LineHeight = 22,
+            Foreground = FindBrush($"Text.Body.{theme}"),
             PagePadding = new Thickness(0),
-            TextAlignment = TextAlignment.Left
+            FlowDirection = direction,
+            Language = TextDirectionService.GetLanguage(message),
+            TextAlignment = direction == FlowDirection.RightToLeft
+                ? TextAlignment.Right
+                : TextAlignment.Left
         };
 
         foreach (var block in MarkdownParser.ParseBlocks(message))
             doc.Blocks.Add(block);
 
+        MessageViewer.FlowDirection = direction;
         MessageViewer.Document = doc;
     }
 
@@ -372,33 +493,51 @@ public partial class NotificationCard : UserControl
 
     private Button CreateStyledButton(ButtonDefinition btnDef, int index, string theme)
     {
+        var direction = TextDirectionService.GetFlowDirection(btnDef.Label);
         var button = new Button
         {
-            Content = btnDef.Label.ToUpperInvariant(),
-            Tag     = index
+            Content = direction == FlowDirection.RightToLeft
+                ? btnDef.Label
+                : btnDef.Label.ToUpperInvariant(),
+            Tag = index,
+            FlowDirection = direction,
+            Language = TextDirectionService.GetLanguage(btnDef.Label)
         };
 
         if (btnDef.Style == ButtonStyle.Primary && Config != null)
         {
-            // Primary buttons use the type's accent color
-            var type = Config.Type.ToString();
-            var accent = TryFindResource($"{type}.Accent") as SolidColorBrush;
-            var accentHover = TryFindResource($"{type}.AccentHover") as SolidColorBrush;
-            var accentPressed = TryFindResource($"{type}.AccentPressed") as SolidColorBrush;
-            var accentBorder = TryFindResource($"{type}.AccentBorder") as SolidColorBrush;
+            var prefix = ThemeService.IsArtistic(Theme)
+                ? $"Theme.Accent.{theme}"
+                : $"{Config.Type}.Accent";
+            var hoverPrefix = ThemeService.IsArtistic(Theme)
+                ? $"Theme.AccentHover.{theme}"
+                : $"{Config.Type}.AccentHover";
+            var pressedPrefix = ThemeService.IsArtistic(Theme)
+                ? $"Theme.AccentPressed.{theme}"
+                : $"{Config.Type}.AccentPressed";
+            var borderPrefix = ThemeService.IsArtistic(Theme)
+                ? $"Theme.Border.{theme}"
+                : $"{Config.Type}.AccentBorder";
+            var accent = TryFindResource(prefix) as SolidColorBrush;
+            var accentHover = TryFindResource(hoverPrefix) as SolidColorBrush;
+            var accentPressed = TryFindResource(pressedPrefix) as SolidColorBrush;
+            var accentBorder = TryFindResource(borderPrefix) as SolidColorBrush;
 
             if (accent != null)
-                button.Style = CreateAccentButtonStyle(accent, accentHover ?? accent, accentPressed ?? accent, accentBorder ?? accent);
+                button.Style = CreateAccentButtonStyle(
+                    accent,
+                    accentHover ?? accent,
+                    accentPressed ?? accent,
+                    accentBorder ?? accent);
             else
                 button.Style = (Style)FindResource("PrimaryButton");
         }
         else
         {
-            var styleKey = btnDef.Style switch
-            {
-                ButtonStyle.Danger => $"DangerButton.{theme}",
-                _                 => $"GhostButton.{theme}"
-            };
+            var contrast = ThemeService.ContrastVariant(Theme);
+            var styleKey = btnDef.Style == ButtonStyle.Danger
+                ? $"DangerButton.{contrast}"
+                : $"GhostButton.{contrast}";
             button.Style = (Style)FindResource(styleKey);
         }
 
@@ -458,8 +597,29 @@ public partial class NotificationCard : UserControl
 
     private void OnButtonClick(object sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is int index && Config != null)
-            ButtonClicked?.Invoke(this, new ButtonClickedEventArgs(Config.Buttons[index], index));
+        if (sender is not Button button || button.Tag is not int index || Config == null)
+            return;
+
+        if (Config.Input?.Required == true && string.IsNullOrWhiteSpace(InputBox.Text))
+        {
+            InputValidation.Visibility = Visibility.Visible;
+            InputBox.Focus();
+            return;
+        }
+
+        ButtonClicked?.Invoke(this, new ButtonClickedEventArgs(Config.Buttons[index], index));
+    }
+
+    private void OnInputTextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (InputPlaceholder == null)
+            return;
+
+        InputPlaceholder.Visibility = InputBox.Text.Length == 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        if (!string.IsNullOrWhiteSpace(InputBox.Text))
+            InputValidation.Visibility = Visibility.Collapsed;
     }
 
     private void OnCloseClick(object sender, RoutedEventArgs e)

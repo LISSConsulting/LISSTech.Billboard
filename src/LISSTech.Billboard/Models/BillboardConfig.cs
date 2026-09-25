@@ -15,7 +15,10 @@ public enum ThemeMode
 {
     Auto,
     Light,
-    Dark
+    Dark,
+    StarryNight,
+    WaterLilies,
+    GreatWave
 }
 
 public sealed class BillboardConfig
@@ -29,6 +32,7 @@ public sealed class BillboardConfig
     public List<ButtonDefinition> Buttons { get; init; } = new();
     public string? Illustration { get; init; }
     public BrandingConfig? Branding { get; init; }
+    public InputDefinition? Input { get; init; }
 
     // Used by exe host for pipe IPC — not part of public API
     internal string? PipeName { get; set; }

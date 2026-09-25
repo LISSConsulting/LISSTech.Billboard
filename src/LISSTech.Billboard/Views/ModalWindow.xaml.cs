@@ -6,6 +6,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LISSTech.Billboard.Controls;
 using LISSTech.Billboard.Helpers;
+using LISSTech.Billboard.Services;
 using LISSTech.Billboard.Models;
 
 namespace LISSTech.Billboard.Views;
@@ -19,23 +20,22 @@ public partial class ModalWindow : Window
 
     public BillboardResult Result => _result ?? BillboardResult.FromDismiss();
 
-    public ModalWindow(BillboardConfig config, bool isDarkTheme = true)
+    public ModalWindow(BillboardConfig config, ThemeMode theme = ThemeMode.Dark)
     {
         InitializeComponent();
         _config = config;
 
-        // Set modal container background to match theme
-        ModalContainer.Background = isDarkTheme
-            ? (FindResource("Card.Background.Dark") as Brush ?? Brushes.Black)
-            : (FindResource("Card.Background.Light") as Brush ?? Brushes.White);
+        var isDark = ThemeService.IsDark(theme);
+        ModalContainer.Background = FindResource($"Card.Background.{theme}") as Brush ??
+            (isDark ? Brushes.Black : Brushes.White);
 
         Card.Config = config;
-        Card.IsDarkTheme = isDarkTheme;
+        Card.Theme = theme;
         Card.IsModal = true;
 
         Card.ButtonClicked += (_, e) =>
         {
-            _result = BillboardResult.FromButton(e.Button, e.Index);
+            _result = BillboardResult.FromButton(e.Button, e.Index, Card.InputText);
             AnimateOut();
         };
 

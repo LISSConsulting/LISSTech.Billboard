@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using LISSTech.Billboard.Models;
 
@@ -56,22 +57,30 @@ public static class CliParser
 
             USAGE:
               Billboard.exe --type <type> --title <text> --message <text> [options]
+              Billboard.exe --payload <base64>
               Billboard.exe --json < config.json
 
             REQUIRED:
               --type <type>        info, warn, alert, critical, question
               --title <text>       Heading text
-              --message <text>     Body text (supports **bold**, *italic*, - bullets, [links](url))
+              --message <text>     Body text (bold, italic, code, bullets, HTTPS links)
 
             OPTIONS:
               --timeout <seconds>  Auto-dismiss (default: 10s info/warn, 15s alert, 0 critical/question)
               --modal              Show as centered modal instead of bottom-right toast
-              --theme <theme>      auto (default), light, dark
+              --theme <theme>      auto, light, dark, starrynight, waterlilies, greatwave
               --pipe <name>        Named pipe for IPC result (JSON)
               --buttons <spec>     Semicolon-separated: Label:value[:style][:defer=duration]
-              --illustration <name> Illustration name (default: auto per type; "none" to disable)
+              --illustration <src> Built-in name, local path, or public HTTPS PNG/JPG/GIF
+              --input-label <text> Add one text input to a modal
+              --input-placeholder <text> Input hint shown while empty
+              --input-default <text> Initial input value
+              --input-required     Require a non-blank response
+              --input-multiline    Use a multiline text input
+              --input-max-length <n> Character limit (1-10000; default 1024)
               --msp-name <text>    MSP/organization name woven into context footer
-              --msp-logo <path>   Logo image file path or URL (PNG, JPG, ICO)
+              --msp-logo <path>   Logo image file path or public HTTPS PNG/JPG/GIF
+              --payload <base64>   Base64-encoded argument vector for safe process forwarding
               --json               Read config from stdin as JSON
               --help               Show this help
 
@@ -90,9 +99,63 @@ public static class CliParser
             LISS Technologies — https://lisstech.com
             """;
     }
+    public static string EncodePayload(string[] args)
+    {
+        if (args is null)
+            throw new ArgumentNullException(nameof(args));
+
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, new UTF8Encoding(false, true), leaveOpen: true))
+        {
+            writer.Write(args.Length);
+            foreach (var arg in args)
+            {
+                if (arg is null)
+                    throw new ArgumentException("Payload arguments cannot contain null values.", nameof(args));
+                writer.Write(arg);
+            }
+        }
+        return Convert.ToBase64String(stream.ToArray());
+    }
+
+    private static string[] DecodePayload(string[] args)
+    {
+        var payloadIndex = Array.FindIndex(
+            args,
+            arg => arg.Equals("--payload", StringComparison.OrdinalIgnoreCase));
+
+        if (payloadIndex < 0)
+            return args;
+        if (payloadIndex != 0 || args.Length != 2)
+            throw new ArgumentException("--payload must be the only command-line option.");
+
+        try
+        {
+            var bytes = Convert.FromBase64String(args[1]);
+            using var stream = new MemoryStream(bytes, writable: false);
+            using var reader = new BinaryReader(stream, new UTF8Encoding(false, true));
+
+            var count = reader.ReadInt32();
+            if (count < 0 || count > 128)
+                throw new InvalidDataException("Payload argument count is invalid.");
+
+            var decoded = new string[count];
+            for (var i = 0; i < count; i++)
+                decoded[i] = reader.ReadString();
+            if (stream.Position != stream.Length)
+                throw new InvalidDataException("Payload contains trailing data.");
+            return decoded;
+        }
+        catch (Exception ex) when (
+            ex is FormatException or IOException or DecoderFallbackException)
+        {
+            throw new ArgumentException("--payload is not a valid Billboard argument payload.", ex);
+        }
+    }
 
     public static BillboardConfig Parse(string[] args, System.IO.TextReader? stdinReader = null)
     {
+        args = DecodePayload(args);
         var flags = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         var boolFlags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -125,6 +188,14 @@ public static class CliParser
         string? illustration = null;
         string? mspName = null;
         string? mspLogo = null;
+        var inputSpecified = false;
+        var inputLabel = "Response";
+        string? inputPlaceholder = null;
+        string? inputDefault = null;
+        var inputRequired = false;
+        var inputMultiline = false;
+        var inputMaxLength = 1024;
+
 
         if (boolFlags.Contains("json") || flags.ContainsKey("json"))
         {
@@ -172,6 +243,34 @@ public static class CliParser
 
             if (root.TryGetProperty("MspLogo", out var mspLogoProp) || root.TryGetProperty("mspLogo", out mspLogoProp))
                 mspLogo = mspLogoProp.GetString();
+            if ((root.TryGetProperty("Input", out var inputProp) ||
+                 root.TryGetProperty("input", out inputProp)) &&
+                inputProp.ValueKind != JsonValueKind.Null)
+            {
+                if (inputProp.ValueKind != JsonValueKind.Object)
+                    throw new ArgumentException("Input must be a JSON object.");
+
+                inputSpecified = true;
+                if (inputProp.TryGetProperty("Label", out var inputLabelProp) ||
+                    inputProp.TryGetProperty("label", out inputLabelProp))
+                    inputLabel = inputLabelProp.GetString() ?? "";
+                if (inputProp.TryGetProperty("Placeholder", out var placeholderProp) ||
+                    inputProp.TryGetProperty("placeholder", out placeholderProp))
+                    inputPlaceholder = placeholderProp.GetString();
+                if (inputProp.TryGetProperty("DefaultValue", out var defaultProp) ||
+                    inputProp.TryGetProperty("defaultValue", out defaultProp))
+                    inputDefault = defaultProp.GetString();
+                if (inputProp.TryGetProperty("Required", out var requiredProp) ||
+                    inputProp.TryGetProperty("required", out requiredProp))
+                    inputRequired = requiredProp.GetBoolean();
+                if (inputProp.TryGetProperty("Multiline", out var multilineProp) ||
+                    inputProp.TryGetProperty("multiline", out multilineProp))
+                    inputMultiline = multilineProp.GetBoolean();
+                if (inputProp.TryGetProperty("MaxLength", out var maxLengthProp) ||
+                    inputProp.TryGetProperty("maxLength", out maxLengthProp))
+                    inputMaxLength = maxLengthProp.GetInt32();
+            }
+
 
             if (root.TryGetProperty("Buttons", out var buttonsProp) || root.TryGetProperty("buttons", out buttonsProp))
             {
@@ -234,6 +333,40 @@ public static class CliParser
 
         if (flags.TryGetValue("msp-logo", out var mspLogoStr) && mspLogoStr != null)
             mspLogo = mspLogoStr;
+        if (flags.TryGetValue("input-label", out var inputLabelStr) && inputLabelStr != null)
+        {
+            inputSpecified = true;
+            inputLabel = inputLabelStr;
+        }
+        if (flags.TryGetValue("input-placeholder", out var inputPlaceholderStr) &&
+            inputPlaceholderStr != null)
+        {
+            inputSpecified = true;
+            inputPlaceholder = inputPlaceholderStr;
+        }
+        if (flags.TryGetValue("input-default", out var inputDefaultStr) && inputDefaultStr != null)
+        {
+            inputSpecified = true;
+            inputDefault = inputDefaultStr;
+        }
+        if (boolFlags.Contains("input-required"))
+        {
+            inputSpecified = true;
+            inputRequired = true;
+        }
+        if (boolFlags.Contains("input-multiline"))
+        {
+            inputSpecified = true;
+            inputMultiline = true;
+        }
+        if (flags.TryGetValue("input-max-length", out var inputMaxLengthStr) &&
+            inputMaxLengthStr != null)
+        {
+            inputSpecified = true;
+            if (!int.TryParse(inputMaxLengthStr, out inputMaxLength))
+                throw new ArgumentException("--input-max-length must be a valid integer.");
+        }
+
 
         if (flags.TryGetValue("buttons", out var buttonsStr) && buttonsStr != null)
         {
@@ -283,6 +416,29 @@ public static class CliParser
         BrandingConfig? branding = null;
         if (mspName != null || mspLogo != null)
             branding = new BrandingConfig { Name = mspName, Logo = mspLogo };
+        InputDefinition? input = null;
+        if (inputSpecified)
+        {
+            if (!modal)
+                throw new ArgumentException("Input options require --modal.");
+            if (string.IsNullOrWhiteSpace(inputLabel))
+                throw new ArgumentException("Input label cannot be empty.");
+            if (inputMaxLength < 1 || inputMaxLength > 10000)
+                throw new ArgumentException("Input max length must be between 1 and 10000.");
+            if ((inputDefault?.Length ?? 0) > inputMaxLength)
+                throw new ArgumentException("Input default value exceeds its max length.");
+
+            input = new InputDefinition
+            {
+                Label = inputLabel,
+                Placeholder = inputPlaceholder,
+                DefaultValue = inputDefault,
+                Required = inputRequired,
+                Multiline = inputMultiline,
+                MaxLength = inputMaxLength
+            };
+        }
+
 
         var config = new BillboardConfig
         {
@@ -293,8 +449,9 @@ public static class CliParser
             Modal = modal,
             Theme = theme,
             Buttons = buttons,
-            Illustration = illustration?.Equals("none", StringComparison.OrdinalIgnoreCase) == true ? null : illustration,
+            Illustration = illustration,
             Branding = branding,
+            Input = input,
         };
         config.PipeName = pipeName;
         return config;

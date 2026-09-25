@@ -130,6 +130,44 @@
                                       BorderThickness="0"
                                       Background="Transparent"
                                       Padding="0" />
+
+            <StackPanel x:Name="InputPanel"
+                        Margin="0,22,0,0"
+                        Visibility="Collapsed">
+              <TextBlock x:Name="InputLabel"
+                         FontFamily="Segoe UI, Tahoma"
+                         FontSize="13"
+                         FontWeight="SemiBold"
+                         Margin="0,0,0,8"
+                         TextWrapping="Wrap" />
+              <Grid>
+                <TextBox x:Name="InputBox"
+                         MinHeight="44"
+                         Padding="12,10"
+                         FontFamily="Segoe UI, Tahoma"
+                         FontSize="14"
+                         VerticalContentAlignment="Center"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="False"
+                         BorderThickness="1"
+                         SpellCheck.IsEnabled="True"
+                         TextChanged="OnInputTextChanged" />
+                <TextBlock x:Name="InputPlaceholder"
+                           Margin="13,0"
+                           VerticalAlignment="Center"
+                           FontFamily="Segoe UI, Tahoma"
+                           FontSize="14"
+                           Opacity="0.45"
+                           IsHitTestVisible="False" />
+              </Grid>
+              <TextBlock x:Name="InputValidation"
+                         Margin="0,7,0,0"
+                         FontFamily="Segoe UI, Tahoma"
+                         FontSize="12"
+                         Foreground="#DA5657"
+                         Text="A response is required."
+                         Visibility="Collapsed" />
+            </StackPanel>
           </StackPanel>
 
           <!-- Context footer (own row, no overlap) -->

@@ -22,18 +22,25 @@ public sealed class BillboardResult
 
     [JsonPropertyName("defer")]
     public TimeSpan? Defer { get; set; }
+    [JsonPropertyName("input")]
+    public string? Input { get; set; }
+
 
     [JsonPropertyName("timestamp")]
     public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
 
-    public static BillboardResult FromButton(ButtonDefinition button, int index) => new()
+    public static BillboardResult FromButton(
+        ButtonDefinition button,
+        int index,
+        string? input = null) => new()
     {
         Button = button.Label,
         Value = button.Value,
         Index = index,
         Dismissed = false,
         Timeout = false,
-        Defer = button.Defer
+        Defer = button.Defer,
+        Input = input
     };
 
     public static BillboardResult FromDismiss() => new()

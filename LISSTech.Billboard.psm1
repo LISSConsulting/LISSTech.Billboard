@@ -51,6 +51,44 @@ function New-BillboardBranding {
     return $branding
 }
 
+function New-BillboardInput {
+    [CmdletBinding()]
+    [OutputType([LISSTech.Billboard.Models.InputDefinition])]
+    param(
+        [ValidateNotNullOrEmpty()]
+        [string]$Label = 'Response',
+
+        [string]$Placeholder,
+
+        [string]$DefaultValue,
+
+        [switch]$Required,
+
+        [switch]$Multiline,
+
+        [ValidateRange(1, 10000)]
+        [int]$MaxLength = 1024
+    )
+
+    if ($PSBoundParameters.ContainsKey('DefaultValue') -and $DefaultValue.Length -gt $MaxLength) {
+        throw 'DefaultValue cannot exceed MaxLength.'
+    }
+
+    $definition = [LISSTech.Billboard.Models.InputDefinition]::new()
+    $definition.GetType().GetProperty('Label').SetValue($definition, $Label)
+    $definition.GetType().GetProperty('Required').SetValue($definition, [bool]$Required)
+    $definition.GetType().GetProperty('Multiline').SetValue($definition, [bool]$Multiline)
+    $definition.GetType().GetProperty('MaxLength').SetValue($definition, $MaxLength)
+    if ($PSBoundParameters.ContainsKey('Placeholder')) {
+        $definition.GetType().GetProperty('Placeholder').SetValue($definition, $Placeholder)
+    }
+    if ($PSBoundParameters.ContainsKey('DefaultValue')) {
+        $definition.GetType().GetProperty('DefaultValue').SetValue($definition, $DefaultValue)
+    }
+
+    return $definition
+}
+
 function New-BillboardNotification {
     [CmdletBinding()]
     [OutputType([LISSTech.Billboard.Models.BillboardConfig])]
@@ -69,7 +107,10 @@ function New-BillboardNotification {
 
         [LISSTech.Billboard.Models.BrandingConfig]$Branding,
 
-        [ValidateSet('Auto', 'Light', 'Dark')]
+        [Alias('Input')]
+        [LISSTech.Billboard.Models.InputDefinition]$ResponseInput,
+
+        [ValidateSet('Auto', 'Light', 'Dark', 'StarryNight', 'WaterLilies', 'GreatWave')]
         [string]$Theme = 'Auto',
 
         [int]$Timeout,
@@ -88,7 +129,7 @@ function New-BillboardNotification {
     $config.GetType().GetProperty('Type').SetValue($config, [LISSTech.Billboard.Models.NotificationType]::$Type)
     $config.GetType().GetProperty('Title').SetValue($config, $Title)
     $config.GetType().GetProperty('Message').SetValue($config, $Message)
-    $config.GetType().GetProperty('Modal').SetValue($config, [bool]$Modal)
+    $config.GetType().GetProperty('Modal').SetValue($config, [bool]($Modal -or $ResponseInput))
     $config.GetType().GetProperty('Theme').SetValue($config, [LISSTech.Billboard.Models.ThemeMode]::$Theme)
     $config.GetType().GetProperty('Buttons').SetValue($config, $buttonList)
 
@@ -99,11 +140,13 @@ function New-BillboardNotification {
     if ($Branding) {
         $config.GetType().GetProperty('Branding').SetValue($config, $Branding)
     }
+    if ($ResponseInput) {
+        $config.GetType().GetProperty('Input').SetValue($config, $ResponseInput)
+    }
+
 
     if ($PSBoundParameters.ContainsKey('Illustration') -and $Illustration) {
-        $illusValue = $null
-        if ($Illustration -ne 'none') { $illusValue = $Illustration }
-        $config.GetType().GetProperty('Illustration').SetValue($config, $illusValue)
+        $config.GetType().GetProperty('Illustration').SetValue($config, $Illustration)
     }
 
     return $config
@@ -122,21 +165,41 @@ function Show-Billboard {
     )
 
     if ($AsUser -and (Test-IsSystem)) {
+        $existingIds = @(Get-Process -Name 'Billboard' -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty Id)
         $cliArgs = ConvertTo-CliArgs $Notification
-        $exe, $cliArgs = Resolve-AsUserCommand $cliArgs
+        $exe, $cliArgs = Resolve-AsUserCommand $cliArgs -NoWait
 
-        $quotedArgs = $cliArgs | ForEach-Object { if ($_ -match ' ') { "`"$_`"" } else { $_ } }
-        $startParams = @{ FilePath = $exe; ArgumentList = $quotedArgs; NoNewWindow = $true }
+        $quotedArgs = $cliArgs | ForEach-Object { if ($_ -match '\s') { "`"$_`"" } else { $_ } }
+        $serviceUiProcess = Start-Process -FilePath $exe -ArgumentList $quotedArgs -NoNewWindow -PassThru
 
-        if ($PassThru) {
-            return Start-Process @startParams -PassThru
+        if (-not $serviceUiProcess.WaitForExit(15000)) {
+            throw 'ServiceUI did not finish launching Billboard within 15 seconds.'
         }
-        $null = Start-Process @startParams
+
+        $billboardProcess = $null
+        $launchDeadline = [DateTime]::UtcNow.AddSeconds(10)
+        do {
+            $billboardProcess = Get-Process -Name 'Billboard' -ErrorAction SilentlyContinue |
+                Where-Object { $_.Id -notin $existingIds -and $_.SessionId -ne 0 } |
+                Select-Object -First 1
+            if (-not $billboardProcess) { Start-Sleep -Milliseconds 100 }
+        } while (-not $billboardProcess -and [DateTime]::UtcNow -lt $launchDeadline)
+
+        if (-not $billboardProcess) {
+            throw "ServiceUI did not create Billboard in an interactive user session (exit code $($serviceUiProcess.ExitCode)). Ensure a user is logged on and can read the module directory."
+        }
+
+        if ($PassThru) { return $billboardProcess }
         return
     }
+    if ($AsUser -and [System.Diagnostics.Process]::GetCurrentProcess().SessionId -eq 0) {
+        throw '-AsUser requires LocalSystem when called from a non-interactive RMM session.'
+    }
+
 
     if ($PassThru) {
-        Write-Warning '-PassThru is only supported with -AsUser. Showing notification synchronously.'
+        Write-Warning '-PassThru is only supported when -AsUser routes through ServiceUI from SYSTEM. Showing notification synchronously.'
     }
 
     [LISSTech.Billboard.BillboardService]::Show($Notification)
@@ -152,7 +215,6 @@ function Request-Billboard {
         [switch]$AsUser
     )
 
-
     if ($AsUser -and (Test-IsSystem)) {
         $pipeName = New-BillboardPipeName
         $Notification.GetType().GetProperty('PipeName', [System.Reflection.BindingFlags]'NonPublic,Instance').SetValue($Notification, $pipeName)
@@ -160,23 +222,35 @@ function Request-Billboard {
         $cliArgs = ConvertTo-CliArgs $Notification
         $exe, $cliArgs = Resolve-AsUserCommand $cliArgs
 
-        $quotedArgs = $cliArgs | ForEach-Object { if ($_ -match ' ') { "`"$_`"" } else { $_ } }
+        $quotedArgs = $cliArgs | ForEach-Object { if ($_ -match '\s') { "`"$_`"" } else { $_ } }
         $process = Start-Process -FilePath $exe -ArgumentList $quotedArgs -NoNewWindow -PassThru
+
+        if ($process.WaitForExit(2000)) {
+            throw "ServiceUI exited before Billboard connected (exit code $($process.ExitCode)). Ensure a user is logged on and can read the module directory."
+        }
 
         try {
             return Read-BillboardPipe -PipeName $pipeName -TimeoutSeconds 300
         } catch {
-            if (-not $process.HasExited) {
-                $null = $process.WaitForExit(15000)
-                if (-not $process.HasExited) { $process.Kill() }
+            if (-not $process.HasExited -and -not $process.WaitForExit(15000)) {
+                $process.Kill()
+                $process.WaitForExit()
             }
+
             $exitCode = $process.ExitCode
             if ($exitCode -eq 100) {
                 throw "Billboard exited with error (exit code 100). Pipe read also failed: $_"
             }
+            if ($exitCode -notin @(0, 1, 2)) {
+                throw "ServiceUI failed to run Billboard in the interactive user session (exit code $exitCode). Pipe read also failed: $_"
+            }
             return [LISSTech.Billboard.Models.BillboardResult]::FromDismiss()
         }
     }
+    if ($AsUser -and [System.Diagnostics.Process]::GetCurrentProcess().SessionId -eq 0) {
+        throw '-AsUser requires LocalSystem when called from a non-interactive RMM session.'
+    }
+
 
     return [LISSTech.Billboard.BillboardService]::Show($Notification)
 }
@@ -249,6 +323,18 @@ function ConvertTo-CliArgs {
     if ($Config.Illustration) {
         $cliArgs.Add('--illustration'); $cliArgs.Add($Config.Illustration)
     }
+    if ($Config.Input) {
+        $cliArgs.Add('--input-label'); $cliArgs.Add($Config.Input.Label)
+        if ($null -ne $Config.Input.Placeholder) {
+            $cliArgs.Add('--input-placeholder'); $cliArgs.Add($Config.Input.Placeholder)
+        }
+        if ($null -ne $Config.Input.DefaultValue) {
+            $cliArgs.Add('--input-default'); $cliArgs.Add($Config.Input.DefaultValue)
+        }
+        if ($Config.Input.Required) { $cliArgs.Add('--input-required') }
+        if ($Config.Input.Multiline) { $cliArgs.Add('--input-multiline') }
+        $cliArgs.Add('--input-max-length'); $cliArgs.Add($Config.Input.MaxLength.ToString())
+    }
     $pipeName = $Config.GetType().GetProperty('PipeName', [System.Reflection.BindingFlags]'NonPublic,Instance').GetValue($Config)
     if ($pipeName) {
         $cliArgs.Add('--pipe'); $cliArgs.Add($pipeName)
@@ -279,19 +365,41 @@ function Test-IsSystem {
 
 function Resolve-AsUserCommand {
     [OutputType([object[]])]
-    param([Parameter(Mandatory)][string[]]$BillboardArgs)
+    param(
+        [Parameter(Mandatory)][string[]]$BillboardArgs,
+        [switch]$NoWait
+    )
 
     if (-not (Test-IsSystem)) {
-        Write-Warning '-AsUser specified but not running as SYSTEM. Launching Billboard directly.'
+        if ([System.Diagnostics.Process]::GetCurrentProcess().SessionId -eq 0) {
+            throw '-AsUser requires LocalSystem when called from a non-interactive RMM session.'
+        }
+        Write-Warning '-AsUser specified from an interactive non-SYSTEM session. Launching Billboard directly.'
         return @($script:BillboardExe, $BillboardArgs)
     }
-
-    if (-not (Test-Path $script:ServiceUIExe)) {
-        throw [System.IO.FileNotFoundException]::new("ServiceUI.exe not found at '$script:ServiceUIExe'.")
+    $explorer = Get-Process -Name 'explorer' -ErrorAction SilentlyContinue |
+        Where-Object { $_.SessionId -ne 0 } |
+        Select-Object -First 1
+    if (-not $explorer) {
+        throw 'ServiceUI could not find an interactive Explorer session. A user must be logged on before using -AsUser.'
     }
 
-    $wrappedArgs = @('-process:explorer.exe', $script:BillboardExe) + $BillboardArgs
-    return @($script:ServiceUIExe, $wrappedArgs)
+
+    if (-not (Test-Path -LiteralPath $script:ServiceUIExe -PathType Leaf)) {
+        throw [System.IO.FileNotFoundException]::new("ServiceUI.exe not found at '$script:ServiceUIExe'.")
+    }
+    if (-not (Test-Path -LiteralPath $script:BillboardExe -PathType Leaf)) {
+        throw [System.IO.FileNotFoundException]::new("Billboard.exe not found at '$script:BillboardExe'.")
+    }
+
+    $payload = [LISSTech.Billboard.Services.CliParser]::EncodePayload($BillboardArgs)
+    $wrappedArgs = [System.Collections.Generic.List[string]]::new()
+    if ($NoWait) { $wrappedArgs.Add('-nowait') }
+    $wrappedArgs.Add('-process:explorer.exe')
+    $wrappedArgs.Add($script:BillboardExe)
+    $wrappedArgs.Add('--payload')
+    $wrappedArgs.Add($payload)
+    return @($script:ServiceUIExe, $wrappedArgs.ToArray())
 }
 
 function New-BillboardPipeName {

@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Linq;
 using System.Windows.Documents;
 using LISSTech.Billboard.Services;
@@ -228,4 +229,44 @@ public class MarkdownParserTests
         Assert.IsType<Hyperlink>(inlines[1]);
         Assert.Equal(" for details", ((Run)inlines[2]).Text);
     }
+    [StaFact]
+    public void Parse_BareHttpsUrl_ReturnsHyperlink()
+    {
+        var inlines = MarkdownParser.Parse(
+            "Open https://example.com/path?q=1 for details").ToList();
+
+        var link = Assert.IsType<Hyperlink>(inlines[1]);
+        Assert.Equal("https://example.com/path?q=1", link.NavigateUri.OriginalString);
+    }
+
+    [StaFact]
+    public void Parse_MarkdownImage_RendersAltTextWithoutImageFetch()
+    {
+        var inlines = MarkdownParser.Parse(
+            "![Maintenance artwork](https://example.com/image.png)").ToList();
+
+        var run = Assert.Single(inlines);
+        Assert.Equal("[Image: Maintenance artwork]", Assert.IsType<Run>(run).Text);
+    }
+
+    [StaFact]
+    public void Parse_LinkWithCredentials_RendersPlainText()
+    {
+        var inlines = MarkdownParser.Parse(
+            "[private](https://user:password@example.com/path)").ToList();
+
+        var run = Assert.Single(inlines);
+        Assert.Equal("private", Assert.IsType<Run>(run).Text);
+    }
+
+    [StaFact]
+    public void Parse_ArabicText_AppliesRtlFlowDirection()
+    {
+        var run = Assert.IsType<Run>(
+            Assert.Single(MarkdownParser.Parse("مرحبا بالعالم")));
+
+        Assert.Equal(FlowDirection.RightToLeft, run.FlowDirection);
+        Assert.Equal("ar-sa", run.Language.IetfLanguageTag.ToLowerInvariant());
+    }
+
 }

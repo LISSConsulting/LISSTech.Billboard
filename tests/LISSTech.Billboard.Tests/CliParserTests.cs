@@ -141,7 +141,7 @@ public class CliParserTests
             "--message", "M",
             "--illustration", "none"
         });
-        Assert.Null(config.Illustration);
+        Assert.Equal("none", config.Illustration);
     }
 
     [Fact]
@@ -229,7 +229,7 @@ public class CliParserTests
         var json = """{"Type":"Info","Title":"T","Message":"M","Illustration":"none"}""";
         var config = CliParser.Parse(new[] { "--json" }, new StringReader(json));
 
-        Assert.Null(config.Illustration);
+        Assert.Equal("none", config.Illustration);
     }
 
     [Fact]
@@ -472,4 +472,134 @@ public class CliParserTests
 
         Assert.Null(config.Branding);
     }
+
+    [Fact]
+    public void ParsePayload_RoundTripsServiceUiUnsafeText()
+    {
+        var originalArgs = new[]
+        {
+            "--type", "Info",
+            "--title", "RMM maintenance \"window\"",
+            "--message", "🚀 Path: C:\\Program Files\\LISS\\\r\nHe said \"hello\"; A&B's test — café ✓ 完了; $(calc.exe) | <script>",
+            "--timeout", "30",
+            "--msp-name", "LISS Consulting"
+        };
+
+        var payload = CliParser.EncodePayload(originalArgs);
+        Assert.DoesNotContain(payload, char.IsWhiteSpace);
+        Assert.DoesNotContain('"', payload);
+        var config = CliParser.Parse(new[] { "--payload", payload });
+
+        Assert.Equal("RMM maintenance \"window\"", config.Title);
+        Assert.Equal("🚀 Path: C:\\Program Files\\LISS\\\r\nHe said \"hello\"; A&B's test — café ✓ 完了; $(calc.exe) | <script>", config.Message);
+        Assert.Equal("LISS Consulting", config.Branding?.Name);
+        Assert.Equal(30, config.Timeout);
+    }
+
+    [Fact]
+    public void ParsePayload_WithMixedOptions_Throws()
+    {
+        var payload = CliParser.EncodePayload(new[]
+        {
+            "--type", "Info", "--title", "T", "--message", "M"
+        });
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            CliParser.Parse(new[] { "--payload", payload, "--modal" }));
+
+        Assert.Contains("only command-line option", ex.Message);
+    }
+
+    [Fact]
+    public void EncodePayload_WithUnpairedSurrogate_Throws()
+    {
+        Assert.Throws<System.Text.EncoderFallbackException>(() =>
+            CliParser.EncodePayload(new[] { "--message", "\uD800" }));
+    }
+
+    [Fact]
+    public void ParsePayload_WithMalformedBase64_ThrowsHelpfulError()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            CliParser.Parse(new[] { "--payload", "not-base64!" }));
+
+        Assert.Contains("valid Billboard argument payload", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("StarryNight", ThemeMode.StarryNight)]
+    [InlineData("WaterLilies", ThemeMode.WaterLilies)]
+    [InlineData("GreatWave", ThemeMode.GreatWave)]
+    public void ParseFlags_ArtisticTheme_ReturnsTheme(string value, ThemeMode expected)
+    {
+        var config = CliParser.Parse(new[]
+        {
+            "--type", "Info", "--title", "T", "--message", "M",
+            "--theme", value
+        });
+
+        Assert.Equal(expected, config.Theme);
+    }
+
+    [Fact]
+    public void ParseFlags_InputOptions_ReturnInputDefinition()
+    {
+        var config = CliParser.Parse(new[]
+        {
+            "--type", "Question", "--title", "T", "--message", "M", "--modal",
+            "--input-label", "الاسم",
+            "--input-placeholder", "اكتب اسمك",
+            "--input-default", "ليلى",
+            "--input-required",
+            "--input-multiline",
+            "--input-max-length", "80"
+        });
+
+        var input = Assert.IsType<InputDefinition>(config.Input);
+        Assert.Equal("الاسم", input.Label);
+        Assert.Equal("اكتب اسمك", input.Placeholder);
+        Assert.Equal("ليلى", input.DefaultValue);
+        Assert.True(input.Required);
+        Assert.True(input.Multiline);
+        Assert.Equal(80, input.MaxLength);
+    }
+
+    [Fact]
+    public void ParseFlags_InputWithoutModal_Throws()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => CliParser.Parse(new[]
+        {
+            "--type", "Question", "--title", "T", "--message", "M",
+            "--input-label", "Response"
+        }));
+
+        Assert.Contains("modal", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ParseJson_InputObject_ReturnsInputDefinition()
+    {
+        var json = """
+            {"Type":"Question","Title":"T","Message":"M","Modal":true,
+             "Input":{"Label":"Reason","Placeholder":"Explain","Required":true,"MaxLength":64}}
+            """;
+        var config = CliParser.Parse(new[] { "--json" }, new StringReader(json));
+
+        Assert.Equal("Reason", config.Input?.Label);
+        Assert.Equal("Explain", config.Input?.Placeholder);
+        Assert.True(config.Input?.Required);
+        Assert.Equal(64, config.Input?.MaxLength);
+    }
+
+    [Fact]
+    public void BillboardResult_FromButton_PreservesInput()
+    {
+        var result = BillboardResult.FromButton(
+            new ButtonDefinition { Label = "OK", Value = "ok" },
+            0,
+            "typed response");
+
+        Assert.Equal("typed response", result.Input);
+    }
+
 }

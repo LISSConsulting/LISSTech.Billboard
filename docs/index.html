@@ -922,7 +922,7 @@ body::after {
     <span class="keyword">-Message</span> <span class="string">'**Microsoft Defender** has been disabled.'</span> `
     <span class="keyword">-Branding</span> (<span class="cmdlet">New-BillboardBranding</span> <span class="string">'Contoso IT'</span>)
 
-<span class="comment"># Routes through Billboard.exe + ServiceUI.exe automatically</span>
+<span class="comment"># Routes through Billboard.exe + ServiceUI.exe using one Base64 payload token</span>
 <span class="cmdlet">Show-Billboard</span> <span class="variable">$notification</span> <span class="keyword">-AsUser</span>
 
 <span class="comment"># Or wait for response</span>

@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Threading;
 using LISSTech.Billboard.Models;
+using LISSTech.Billboard.Services;
 using LISSTech.Billboard.Views;
 
 namespace LISSTech.Billboard;
@@ -18,24 +19,23 @@ public static class BillboardService
     /// </summary>
     public static BillboardResult Show(BillboardConfig config)
     {
+        if (config == null)
+            throw new ArgumentNullException(nameof(config));
+        ValidateConfig(config);
+
         EnsureApplication();
 
         BillboardResult? result = null;
 
         _app!.Dispatcher.Invoke(() =>
         {
-            bool isDark = config.Theme switch
-            {
-                ThemeMode.Light => false,
-                ThemeMode.Dark => true,
-                _ => IsSystemDarkTheme()
-            };
+            var theme = ThemeService.Resolve(config.Theme, IsSystemDarkTheme());
 
             Window window;
             if (config.Modal)
-                window = new ModalWindow(config, isDark);
+                window = new ModalWindow(config, theme);
             else
-                window = new ToastWindow(config, isDark);
+                window = new ToastWindow(config, theme);
 
             window.ShowDialog();
 
@@ -46,6 +46,25 @@ public static class BillboardService
         });
 
         return result ?? BillboardResult.FromDismiss();
+    }
+
+    private static void ValidateConfig(BillboardConfig config)
+    {
+        if (config.Input == null)
+            return;
+
+        if (!config.Modal)
+            throw new ArgumentException("Input is only supported on modal billboards.", nameof(config));
+        if (string.IsNullOrWhiteSpace(config.Input.Label))
+            throw new ArgumentException("Input label cannot be empty.", nameof(config));
+        if (config.Input.MaxLength < 1 || config.Input.MaxLength > 10000)
+            throw new ArgumentOutOfRangeException(
+                nameof(config),
+                "Input MaxLength must be between 1 and 10000.");
+        if ((config.Input.DefaultValue?.Length ?? 0) > config.Input.MaxLength)
+            throw new ArgumentException(
+                "Input default value exceeds MaxLength.",
+                nameof(config));
     }
 
     private static void EnsureApplication()

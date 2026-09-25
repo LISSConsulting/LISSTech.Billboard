@@ -1,0 +1,247 @@
+name: release-sign
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Full immutable commit selected from protected trunk or a v* tag
+        required: true
+      version:
+        description: Exact package version (for example 26.249.0)
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: billboard-release-${{ inputs.expected_commit }}-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    name: Build and Authenticode-sign Windows package
+    runs-on: [windows, billboard-windows-CST-ISLAB-PC3]
+    timeout-minutes: 45
+    steps:
+      - name: Enforce protected Windows signing context
+        shell: pwsh
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:GITHUB_EVENT_NAME -ne 'workflow_dispatch') { throw 'Signing only accepts a manual workflow dispatch.' }
+          if ($env:COMPUTERNAME -ne 'CST-ISLAB-PC3') { throw "Unexpected Windows signing host '$env:COMPUTERNAME'." }
+          if ($env:GITHUB_REF -ne 'refs/heads/trunk' -and $env:GITHUB_REF -notmatch '^refs/tags/v[0-9][A-Za-z0-9._-]*$') {
+            throw "Signing source is not protected trunk or a v* tag: '$env:GITHUB_REF'."
+          }
+          if ($env:EXPECTED_COMMIT -notmatch '^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$') { throw 'expected_commit must be a full object ID.' }
+          if ($env:RELEASE_VERSION -notmatch '^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$') { throw 'version is malformed.' }
+          if (-not $env:CODE_SIGNING_CERTIFICATE_THUMBPRINT) { throw 'The Windows runner did not provide CODE_SIGNING_CERTIFICATE_THUMBPRINT.' }
+          if (Get-ChildItem Env: | Where-Object Name -Match '(?i)(PIV|PKCS11|PKCS_11).*PIN|PIN.*(PIV|PKCS11|PKCS_11)') {
+            throw 'A hardware-token PIN environment channel is present; signing refuses to run.'
+          }
+
+      - name: Checkout exact protected revision
+        uses: https://code.forgejo.org/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.ref }}
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify source and Windows signing identity
+        shell: pwsh
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git reset --hard HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'git reset failed.' }
+          git clean -ffdx
+          if ($LASTEXITCODE -ne 0) { throw 'git clean failed.' }
+          $commit = (git rev-parse HEAD).Trim().ToLowerInvariant()
+          if ($commit -ne $env:EXPECTED_COMMIT.ToLowerInvariant() -or $commit -ne $env:GITHUB_SHA.ToLowerInvariant()) {
+            throw 'Checked-out revision differs from expected_commit or the dispatch SHA.'
+          }
+          $manifestVersion = [string](Import-PowerShellDataFile ./LISSTech.Billboard.psd1).ModuleVersion
+          if ($manifestVersion -ne $env:RELEASE_VERSION) { throw "Manifest version '$manifestVersion' differs from requested '$env:RELEASE_VERSION'." }
+          $thumbprint = $env:CODE_SIGNING_CERTIFICATE_THUMBPRINT.Replace(' ', '').ToUpperInvariant()
+          if ($thumbprint -notmatch '^[0-9A-F]{40}$') { throw 'The configured certificate thumbprint is malformed.' }
+          $cert = Get-ChildItem Cert:\CurrentUser\My, Cert:\LocalMachine\My -CodeSigningCert |
+            Where-Object Thumbprint -eq $thumbprint | Select-Object -First 1
+          if (-not $cert -or -not $cert.HasPrivateKey -or $cert.Subject -ne 'CN=LISS Consulting Corp.') {
+            throw 'The exact LISS Authenticode identity with private key is unavailable.'
+          }
+          if ($cert.NotAfter.ToUniversalTime() -le (Get-Date).ToUniversalTime()) { throw 'The Authenticode certificate is expired.' }
+
+      - name: Test, build, and sign Windows package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          just test
+          if ($LASTEXITCODE -ne 0) { throw 'Windows tests failed.' }
+          just assemble
+          if ($LASTEXITCODE -ne 0) { throw 'Windows release assembly failed.' }
+          just sign
+          if ($LASTEXITCODE -ne 0) { throw 'Windows signing failed.' }
+
+      - name: Verify and archive Windows signatures
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Resolve-Path 'Release/LISSTech.Billboard'
+          $files = @(
+            "$root/LISSTech.Billboard.psd1",
+            "$root/LISSTech.Billboard.psm1",
+            "$root/Assembly/LISSTech.Billboard.dll",
+            "$root/Bin/Billboard.exe"
+          )
+          $expectedThumbprint = $env:CODE_SIGNING_CERTIFICATE_THUMBPRINT.Replace(' ', '').ToUpperInvariant()
+          foreach ($file in $files) {
+            if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing signed artifact: $file" }
+            $signature = Get-AuthenticodeSignature -LiteralPath $file
+            if ($signature.Status -ne 'Valid' -or -not $signature.SignerCertificate -or
+                $signature.SignerCertificate.Subject -ne 'CN=LISS Consulting Corp.' -or
+                $signature.SignerCertificate.Thumbprint -ne $expectedThumbprint -or
+                -not $signature.TimeStamperCertificate) {
+              throw "Authenticode verification failed for $file."
+            }
+          }
+          New-Item -ItemType Directory -Path Release/Artifacts -Force | Out-Null
+          $archive = "Release/Artifacts/LISSTech-Billboard-Windows-$env:RELEASE_VERSION.zip"
+          Compress-Archive -Path "$root/*" -DestinationPath $archive -CompressionLevel Optimal
+          Get-FileHash -Algorithm SHA256 -LiteralPath $archive |
+            ForEach-Object { "$($_.Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($archive))" } |
+            Set-Content -LiteralPath "$archive.sha256" -Encoding ascii
+
+      - name: Upload signed Windows package
+        uses: https://code.forgejo.org/actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: billboard-windows-${{ inputs.version }}-${{ inputs.expected_commit }}
+          path: |
+            Release/Artifacts/LISSTech-Billboard-Windows-${{ inputs.version }}.zip
+            Release/Artifacts/LISSTech-Billboard-Windows-${{ inputs.version }}.zip.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Clean persistent Windows workspace
+        if: ${{ always() }}
+        shell: pwsh
+        run: |
+          git reset --hard HEAD
+          $resetExit = $LASTEXITCODE
+          git clean -ffdx
+          $cleanExit = $LASTEXITCODE
+          if ($resetExit -ne 0 -or $cleanExit -ne 0) { throw "Windows workspace cleanup failed (reset=$resetExit clean=$cleanExit)." }
+
+  macos:
+    name: Build, Developer ID-sign, and notarize macOS package
+    runs-on: [macos, billboard-macos-CST-ISLAB-MAC2]
+    timeout-minutes: 60
+    env:
+      MACOS_APP_IDENTITY: Developer ID Application: Liss Consulting Corp. (2B987AZ6ZT)
+      MACOS_INSTALLER_IDENTITY: Developer ID Installer: Liss Consulting Corp. (2B987AZ6ZT)
+      MACOS_NOTARY_PROFILE: ltac-notary
+      MACOS_KEYCHAIN: /Users/ltac-ci/Library/Keychains/lisstech-release.keychain-db
+    steps:
+      - name: Enforce protected macOS signing context
+        shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          [ "${GITHUB_EVENT_NAME:-}" = workflow_dispatch ] || { echo 'Signing only accepts a manual workflow dispatch.' >&2; exit 1; }
+          [ "$(hostname -s | tr '[:lower:]' '[:upper:]')" = CST-ISLAB-MAC2 ] || { echo "Unexpected macOS signing host '$(hostname -s)'." >&2; exit 1; }
+          case "${GITHUB_REF:-}" in refs/heads/trunk|refs/tags/v[0-9]*) ;; *) echo "Signing source is not protected trunk or a v* tag: '${GITHUB_REF:-}'." >&2; exit 1 ;; esac
+          case "$EXPECTED_COMMIT" in *[!0-9a-fA-F]*|'') echo 'expected_commit must be a full object ID.' >&2; exit 1 ;; esac
+          { [ "${#EXPECTED_COMMIT}" -eq 40 ] || [ "${#EXPECTED_COMMIT}" -eq 64 ]; } || { echo 'expected_commit must be a full object ID.' >&2; exit 1; }
+          case "$RELEASE_VERSION" in *[!0-9A-Za-z.+-]*|'') echo 'version is malformed.' >&2; exit 1 ;; esac
+          printf '%s' "$RELEASE_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$' || { echo 'version is malformed.' >&2; exit 1; }
+          while IFS='=' read -r name _; do
+            case "$name" in *APPLE*PASSWORD*|*P12*|*PRIVATE*KEY*) echo 'Exported Apple signing material is present in the workflow environment.' >&2; exit 1 ;; esac
+          done < <(env)
+
+      - name: Checkout exact protected revision
+        uses: https://code.forgejo.org/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.ref }}
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify source and Apple signing identities
+        shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          git reset --hard HEAD
+          git clean -ffdx
+          commit="$(git rev-parse HEAD | tr '[:upper:]' '[:lower:]')"
+          expected="$(printf '%s' "$EXPECTED_COMMIT" | tr '[:upper:]' '[:lower:]')"
+          dispatch="$(printf '%s' "$GITHUB_SHA" | tr '[:upper:]' '[:lower:]')"
+          [ "$commit" = "$expected" ] && [ "$commit" = "$dispatch" ] || { echo 'Checked-out revision differs from expected_commit or the dispatch SHA.' >&2; exit 1; }
+          manifest_version="$(sed -n "s/^[[:space:]]*ModuleVersion[[:space:]]*=[[:space:]]*'\([^']*\)'.*/\1/p" LISSTech.Billboard.psd1)"
+          [ "$manifest_version" = "$RELEASE_VERSION" ] || { echo "Manifest version '$manifest_version' differs from requested '$RELEASE_VERSION'." >&2; exit 1; }
+          security find-identity -v -p codesigning "$MACOS_KEYCHAIN" | grep -Fq 'Developer ID Application: Liss Consulting Corp. (2B987AZ6ZT)' || { echo 'Developer ID Application identity is unavailable.' >&2; exit 1; }
+          security find-identity -v -p basic "$MACOS_KEYCHAIN" | grep -Fq 'Developer ID Installer: Liss Consulting Corp. (2B987AZ6ZT)' || { echo 'Developer ID Installer identity is unavailable.' >&2; exit 1; }
+          xcrun notarytool history --keychain-profile "$MACOS_NOTARY_PROFILE" --keychain "$MACOS_KEYCHAIN" >/dev/null
+
+      - name: Test, build, sign, package, and notarize macOS
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          swift test --package-path src/LISSTech.Billboard.Mac
+          scripts/build-macos.sh
+          scripts/package-macos.sh "$VERSION"
+          scripts/notarize-macos.sh "Release/macOS/LISSTech-Billboard-$VERSION.pkg"
+
+      - name: Verify macOS signatures and package trust
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          app='Release/macOS/LISSTech Billboard.app'
+          helper='Release/macOS/usr/local/bin/lisstech-billboard-rmm'
+          package="Release/macOS/LISSTech-Billboard-$RELEASE_VERSION.pkg"
+          requirement='anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] exists and certificate leaf[field.1.2.840.113635.100.6.1.13] exists and certificate leaf[subject.OU] = "2B987AZ6ZT"'
+          codesign --verify --strict --verbose=2 --deep "$app"
+          codesign --verify --strict --verbose=2 "$helper"
+          codesign --verify --strict -R="$requirement" "$app"
+          codesign --verify --strict -R="$requirement" "$helper"
+          pkgutil --check-signature "$package" | grep -Fq 'Developer ID Installer: Liss Consulting Corp. (2B987AZ6ZT)' || { echo 'Installer identity verification failed.' >&2; exit 1; }
+          xcrun stapler validate "$package"
+          spctl --assess --type install --verbose=2 "$package"
+          mkdir -p Release/Artifacts
+          cp "$package" Release/Artifacts/
+          shasum -a 256 "Release/Artifacts/$(basename "$package")" > "Release/Artifacts/$(basename "$package").sha256"
+
+      - name: Upload signed macOS package
+        uses: https://code.forgejo.org/actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: billboard-macos-${{ inputs.version }}-${{ inputs.expected_commit }}
+          path: |
+            Release/Artifacts/LISSTech-Billboard-${{ inputs.version }}.pkg
+            Release/Artifacts/LISSTech-Billboard-${{ inputs.version }}.pkg.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Clean persistent macOS workspace
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard HEAD
+          git clean -ffdx

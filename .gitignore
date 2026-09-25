@@ -8,3 +8,5 @@ Release/
 .superpowers/
 *.pdb
 node_modules/
+**/.build/
+**/.swiftpm/

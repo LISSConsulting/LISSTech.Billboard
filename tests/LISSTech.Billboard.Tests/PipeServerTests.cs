@@ -17,7 +17,9 @@ public class PipeServerTests
     {
         var pipeName = $"Billboard.Test.{Guid.NewGuid():N}";
         var result = BillboardResult.FromButton(
-            new ButtonDefinition { Label = "OK", Value = "ok", Style = ButtonStyle.Primary }, 0);
+            new ButtonDefinition { Label = "OK", Value = "ok", Style = ButtonStyle.Primary },
+            0,
+            "موافقة المستخدم");
 
         using var server = new PipeServer(pipeName);
         var serverTask = server.WaitForConnectionAndWriteAsync(result);
@@ -38,6 +40,7 @@ public class PipeServerTests
         Assert.Equal("OK", received!.Button);
         Assert.Equal("ok", received.Value);
         Assert.Equal(0, received.Index);
+        Assert.Equal("موافقة المستخدم", received.Input);
         Assert.False(received.Dismissed);
     }
 

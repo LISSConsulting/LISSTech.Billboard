@@ -124,4 +124,61 @@
   <SolidColorBrush x:Key="Question.AccentPressed"   Color="#1F5A96" />
   <SolidColorBrush x:Key="Question.AccentBorder"    Color="#1F5A96" />
 
+
+  <!-- Text input surfaces -->
+  <SolidColorBrush x:Key="Input.Background.Dark"  Color="#18FFFFFF" />
+  <SolidColorBrush x:Key="Input.Background.Light" Color="#D8FFFFFF" />
+
+  <!-- Starry Night — ultramarine sky, moon gold, cypress green -->
+  <SolidColorBrush x:Key="Text.Primary.StarryNight"        Color="#FFF3BF" />
+  <SolidColorBrush x:Key="Text.Body.StarryNight"           Color="#D9E6F2" />
+  <SolidColorBrush x:Key="Text.BrandWatermark.StarryNight" Color="#66F0C95A" />
+  <LinearGradientBrush x:Key="Card.Background.StarryNight"
+                       StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Color="#F20A1733" Offset="0" />
+    <GradientStop Color="#F21E4D73" Offset="0.55" />
+    <GradientStop Color="#F253632B" Offset="1" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="Input.Background.StarryNight"    Color="#26030B1C" />
+  <SolidColorBrush x:Key="Theme.HeaderBg.StarryNight"      Color="#3079A7D3" />
+  <SolidColorBrush x:Key="Theme.Border.StarryNight"        Color="#D2D9B44A" />
+  <SolidColorBrush x:Key="Theme.Accent.StarryNight"        Color="#E0B84B" />
+  <SolidColorBrush x:Key="Theme.AccentHover.StarryNight"   Color="#F0C95A" />
+  <SolidColorBrush x:Key="Theme.AccentPressed.StarryNight" Color="#B99532" />
+
+  <!-- Water Lilies — mist ivory, lily green, reflected lavender -->
+  <SolidColorBrush x:Key="Text.Primary.WaterLilies"        Color="#24362F" />
+  <SolidColorBrush x:Key="Text.Body.WaterLilies"           Color="#40574E" />
+  <SolidColorBrush x:Key="Text.BrandWatermark.WaterLilies" Color="#665A5368" />
+  <LinearGradientBrush x:Key="Card.Background.WaterLilies"
+                       StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Color="#F8F2E9D8" Offset="0" />
+    <GradientStop Color="#F8C7D8C0" Offset="0.48" />
+    <GradientStop Color="#F8AFC8D7" Offset="0.76" />
+    <GradientStop Color="#F8B8A5C2" Offset="1" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="Input.Background.WaterLilies"    Color="#B8FFFFFF" />
+  <SolidColorBrush x:Key="Theme.HeaderBg.WaterLilies"      Color="#408E6B8A" />
+  <SolidColorBrush x:Key="Theme.Border.WaterLilies"        Color="#B06E8F82" />
+  <SolidColorBrush x:Key="Theme.Accent.WaterLilies"        Color="#6D7F73" />
+  <SolidColorBrush x:Key="Theme.AccentHover.WaterLilies"   Color="#7F9487" />
+  <SolidColorBrush x:Key="Theme.AccentPressed.WaterLilies" Color="#56675D" />
+
+  <!-- The Great Wave — Prussian blue, sea foam, aged paper -->
+  <SolidColorBrush x:Key="Text.Primary.GreatWave"        Color="#FFF8E8" />
+  <SolidColorBrush x:Key="Text.Body.GreatWave"           Color="#D9E8EC" />
+  <SolidColorBrush x:Key="Text.BrandWatermark.GreatWave" Color="#66F0E3C2" />
+  <LinearGradientBrush x:Key="Card.Background.GreatWave"
+                       StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Color="#F20A2942" Offset="0" />
+    <GradientStop Color="#F2145A78" Offset="0.5" />
+    <GradientStop Color="#F277A5AE" Offset="0.78" />
+    <GradientStop Color="#F25F7772" Offset="1" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="Input.Background.GreatWave"    Color="#26020E19" />
+  <SolidColorBrush x:Key="Theme.HeaderBg.GreatWave"      Color="#306CB4C6" />
+  <SolidColorBrush x:Key="Theme.Border.GreatWave"        Color="#C5E8DDBD" />
+  <SolidColorBrush x:Key="Theme.Accent.GreatWave"        Color="#E8DDBD" />
+  <SolidColorBrush x:Key="Theme.AccentHover.GreatWave"   Color="#F5EBD0" />
+  <SolidColorBrush x:Key="Theme.AccentPressed.GreatWave" Color="#C9BA91" />
 </ResourceDictionary>

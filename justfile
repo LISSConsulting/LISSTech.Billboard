@@ -313,6 +313,23 @@ publish-gallery:
     Write-Host "   ✅ LISSTech.Billboard v$version published" -ForegroundColor Green
     Write-Host ""
 
+# ── macOS ───────────────────────────────────────────────────────────────────
+
+# Build universal native app and RMM helper (run on macOS)
+[script('bash')]
+mac-build:
+    ./scripts/build-macos.sh
+
+# Run native macOS Swift tests (run on macOS)
+[script('bash')]
+mac-test:
+    swift test --package-path src/LISSTech.Billboard.Mac
+
+# Assemble macOS installer package (run after mac-build)
+[script('bash')]
+mac-package version="1.0.0":
+    ./scripts/package-macos.sh '{{ version }}'
+
 # ── Clean ───────────────────────────────────────────────────────────────────
 
 # Remove Release/ and obj/ directories
@@ -323,7 +340,8 @@ clean:
     Write-Host "`n🧹 Cleaning" -ForegroundColor Cyan
     @('Release', 'src/LISSTech.Billboard/obj', 'src/LISSTech.Billboard/bin',
       'src/LISSTech.Billboard.Host/obj', 'src/LISSTech.Billboard.Host/bin',
-      'tests/LISSTech.Billboard.Tests/obj', 'tests/LISSTech.Billboard.Tests/bin'
+      'tests/LISSTech.Billboard.Tests/obj', 'tests/LISSTech.Billboard.Tests/bin',
+      'src/LISSTech.Billboard.Mac/.build'
     ) | ForEach-Object {
         if (Test-Path $_) {
             Remove-Item $_ -Recurse -Force
