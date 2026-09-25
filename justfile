@@ -117,6 +117,7 @@ test:
     Write-Host "`n🧪 Running tests" -ForegroundColor Cyan
     & dotnet test 'tests/LISSTech.Billboard.Tests/LISSTech.Billboard.Tests.csproj' --nologo -v:q
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    & '{{ justfile_directory() }}/tests/Test-PowerShellTransport.ps1'
 
 # Visual smoke test — 20 variants (5 types × 2 modes × 2 themes) via PS module
 [script('pwsh', '-NoProfile')]

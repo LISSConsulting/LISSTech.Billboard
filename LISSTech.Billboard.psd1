@@ -1,6 +1,6 @@
 @{
     RootModule        = 'LISSTech.Billboard.psm1'
-    ModuleVersion     = '26.267.0'
+    ModuleVersion     = '26.267.1'
     GUID              = 'f3a7c2e1-8b4d-4f6a-9c5e-1d2b3a4f5e6c'
     Author            = 'LISS Consulting, Corp.'
     CompanyName       = 'LISS Consulting, Corp.'
@@ -40,7 +40,7 @@
             Tags         = @('Windows', 'WPF', 'Notification', 'Toast', 'Modal', 'Endpoint', 'RMM', 'MDM', 'MSP', 'ServiceUI', 'Branding', 'DarkMode')
             LicenseUri   = 'https://github.com/LISSConsulting/LISSTech.Billboard/blob/trunk/LICENSE'
             ProjectUri   = 'https://github.com/LISSConsulting/LISSTech.Billboard'
-            ReleaseNotes = 'Adds Arabic and RTL layout, safe PNG/JPG/GIF remote artwork, Starry Night, Water Lilies, and Great Wave palettes with animated gradients, modal text input, safe HTTPS autolinks and image-alt rendering, and lossless SYSTEM-to-user notification text transport through ServiceUI.'
+            ReleaseNotes = 'Fixes explicit -Timeout 0 handling through the SYSTEM-to-user ServiceUI transport so Info, Warn, and Alert notifications can remain visible until dismissed.'
         }
     }
 }

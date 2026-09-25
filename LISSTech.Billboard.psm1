@@ -305,7 +305,7 @@ function ConvertTo-CliArgs {
     $cliArgs.Add('--title');   $cliArgs.Add($Config.Title)
     $cliArgs.Add('--message'); $cliArgs.Add($Config.Message)
 
-    if ($Config.Timeout) {
+    if ($null -ne $Config.Timeout) {
         $cliArgs.Add('--timeout'); $cliArgs.Add($Config.Timeout.ToString())
     }
     if ($Config.Modal) { $cliArgs.Add('--modal') }
